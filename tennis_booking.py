@@ -6,6 +6,15 @@ from datetime import datetime
 import inspect
 import json
 import slots
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 DEBUG_PATH = "debug/debug.html"
 
@@ -64,20 +73,20 @@ async def login(page, username, password):
     await page.get_by_placeholder("Password").fill(password)
     await page.get_by_role("button", name="Log in").click()
     # Wait for navigation or login success indicator
-    print("Wait for navigation or login success indicator")
+    logger.info("Wait for navigation or login success indicator")
     await page.wait_for_selector("#account-options", timeout=10000)
     await expect(page.locator("#account-options")).to_contain_text("Eduard Zhuk")
 
 
 async def book_slot(page):
-    print("Continue with booking")
+    logger.info("Continue with booking")
     await page.wait_for_selector('button:has-text("Continue booking")', timeout=2000)
     await page.get_by_role("button", name="Continue booking").click()
-    print("Wait for confirmation and verify")
+    logger.info("Wait for confirmation and verify")
     await page.wait_for_selector(
         'h1:has-text("Your booking has been confirmed")', timeout=5000
     )
-    print(f"Successfully booked session")
+    logger.info("Successfully booked session")
 
 
 async def accept_cookies(page):
@@ -121,16 +130,16 @@ async def fetch_and_book_session(
 
         try:
             # Initial page load and cookie acceptance
-            print("Initial page load start")
+            logger.info("Initial page load start")
             await page.goto(
                 f"https://clubspark.lta.org.uk/PrioryPark2/Booking/BookByDate#?date={date}&role=guest"
             )
 
-            print("Login process start")
+            logger.info("Login process start")
             await accept_cookies(page)
             await login(page, username, password)
 
-            print("Slot booking process start")
+            logger.info("Slot booking process start")
             page = await context.new_page()
             await page.goto(
                 f"https://clubspark.lta.org.uk/PrioryPark2/Booking/BookByDate#?date={date}&role=guest"
@@ -139,22 +148,22 @@ async def fetch_and_book_session(
             await page.wait_for_timeout(1000)
 
             # Get the page content and parse available sessions
-            print("Get the page content and parse available sessions start")
+            logger.info("Get the page content and parse available sessions start")
             html_content = await page.content()
             slot = slots.find_slot(html_content, target_time, preferred_courts)
 
             if slot:
-                print(f"Found available session at {parse_time(slot.start_time)}")
-                print("Click on the earliest available session")
+                logger.info(f"Found available session at {parse_time(slot.start_time)}")
+                logger.info("Click on the earliest available session")
                 session_selector = f'[data-test-id="{slot.slot_key}"]'
                 await page.locator(session_selector).click()
                 if not no_booking:
                     await book_slot(page)
-                    print("Booking process completed")
+                    logger.info("Booking process completed")
                 else:
-                    print("Skipping booking as --no-booking was specified")
+                    logger.info("Skipping booking as --no-booking was specified")
             else:
-                print("No available sessions found")
+                logger.info("No available sessions found")
         except Exception as exc:
             await write_debug(".debug.html", page, exc)
             raise
@@ -195,7 +204,7 @@ async def main():
     try:
         await fetch_and_book_session(args.date, args.show, args.slow, args.no_booking)
     except Exception as e:
-        print(f"Error during booking process: {e}")
+        logger.error(f"Error during booking process: {e}")
         raise
 
 
