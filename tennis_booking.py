@@ -7,6 +7,7 @@ import inspect
 import json
 import slots
 
+DEBUG_PATH = "debug/debug.html"
 
 def parse_time(minutes):
     """Convert minutes since midnight to HH:MM format"""
@@ -49,7 +50,8 @@ async def write_debug(path_to_file, page, exc: Exception = None):
         f.write("Locals:\n")
         json.dump(serializable_locals, f, indent=2)
         if exc:
-            f.write(f"\nException: {traceback.format_exception(exc)}\n")
+            f.write("\nException:\n")
+            f.write(traceback.format_exception(exc))
         f.write("-->\n")
         f.write(await page.content())
 

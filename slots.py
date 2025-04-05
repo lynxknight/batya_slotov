@@ -55,7 +55,7 @@ def pick_slot(available_slots: list[Slot], target_time, preferred_courts: list[i
 
     return None
 
-def find_slot(html_content, target_time=None, preferred_courts=None) -> Slot | None:
+def find_slot(html_content, target_time, preferred_courts=None) -> Slot | None:
     """
     Find available slot based on preferences
     target_time: Target time in minutes since midnight (e.g. 960 for 16:00)
@@ -66,6 +66,5 @@ def find_slot(html_content, target_time=None, preferred_courts=None) -> Slot | N
     
         None, None if no slot is available
     """
-    soup = BeautifulSoup(html_content, 'html.parser')
-    available_slots = parse_slots(soup)
+    available_slots = parse_slots(html_content)
     return pick_slot(available_slots, target_time, preferred_courts)
