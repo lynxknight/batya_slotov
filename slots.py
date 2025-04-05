@@ -1,5 +1,6 @@
 import dataclasses
 from bs4 import BeautifulSoup
+from datetime import datetime
 
 
 def parse_time(minutes):
@@ -13,10 +14,15 @@ def parse_time(minutes):
 class Slot:
     slot_key: str  # uses data-test-id internally
     court: int
-    start_time: int
+    start_time: int  # minutes since midnight
+    date: datetime | None = None
 
     def __str__(self):
-        return f"Slot<slot_key={self.slot_key}, court={self.court}, start_time={parse_time(self.start_time)}>"
+        return (
+            f"Slot<slot_key={self.slot_key}, court={self.court}, "
+            f"date={self.date.strftime('%Y-%m-%d') if self.date else 'None'}, "
+            f"start_time={parse_time(self.start_time)}>"
+        )
 
     def __repr__(self):
         return self.__str__()
@@ -39,7 +45,7 @@ def parse_slots(html_content) -> list[Slot]:
 
             start_time = int(session.get("data-system-start-time"))
             slot_key = session.find("a", class_="book-interval").get("data-test-id")
-            available_slots.append(Slot(slot_key, court_num, start_time))
+            available_slots.append(Slot(slot_key, court_num, start_time, date=None))
     return available_slots
 
 
@@ -64,19 +70,23 @@ def pick_slot(
     return None
 
 
-def find_slot(html_content, target_time, preferred_courts=None) -> Slot | None:
+def find_slot(
+    html_content, target_time: int, target_date: datetime, preferred_courts=None
+) -> Slot | None:
     """
     Find available slot based on preferences
     target_time: Target time in minutes since midnight (e.g. 960 for 16:00)
+    target_date: affects only "Slot" object contents, datetime object representing the target date,
     preferred_courts: List of preferred court numbers in order of preference
     Returns:
-        slot_key: Slot key of the available slot
-        slot_time: Time of the available slot in minutes since midnight
-
-        None, None if no slot is available
+        Slot object if found, None if no slot is available
     """
     available_slots = parse_slots(html_content)
-    return pick_slot(available_slots, target_time, preferred_courts)
+    picked_slot = pick_slot(available_slots, target_time, preferred_courts)
+    if picked_slot is None:
+        return None
+    picked_slot.date = target_date
+    return picked_slot
 
 
 def parse_slots_from_bookings_list(html_content) -> list[Slot]:
@@ -96,6 +106,16 @@ def parse_slots_from_bookings_list(html_content) -> list[Slot]:
         # Get date from the first column
         date_cell = row.find("td", class_="booking-summary")
         if not date_cell:
+            continue
+
+        # Parse date from the strong tag
+        date_strong = date_cell.find("strong")
+        if not date_strong:
+            continue
+
+        try:
+            date = datetime.strptime(date_strong.text.strip(), "%d/%m/%Y")
+        except ValueError:
             continue
 
         # Get time from the second column
@@ -138,6 +158,6 @@ def parse_slots_from_bookings_list(html_content) -> list[Slot]:
             continue
         slot_key = booking_link.get("href", "").split("/")[-1]
 
-        booked_slots.append(Slot(slot_key, court_num, minutes_since_midnight))
+        booked_slots.append(Slot(slot_key, court_num, minutes_since_midnight, date))
 
     return booked_slots

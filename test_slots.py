@@ -1,4 +1,5 @@
 import pytest
+import datetime
 from slots import parse_slots, pick_slot, Slot, parse_slots_from_bookings_list
 
 
@@ -243,6 +244,16 @@ def test_parse_slots_from_bookings_list(html_content):
         html_content = f.read()
     slots = parse_slots_from_bookings_list(html_content)
     assert slots == [
-        Slot(slot_key="16bfafe5-3314-46c2-9999-4a83e5508deb", court=1, start_time=420),
-        Slot(slot_key="f303a467-da6e-428a-bc68-3680be134cea", court=1, start_time=480),
+        Slot(
+            slot_key="16bfafe5-3314-46c2-9999-4a83e5508deb",
+            court=1,
+            start_time=420,
+            date=datetime.datetime(2025, 4, 8),
+        ),
+        Slot(
+            slot_key="f303a467-da6e-428a-bc68-3680be134cea",
+            court=2,
+            start_time=480,
+            date=datetime.datetime(2025, 4, 17),
+        ),
     ]
