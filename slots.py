@@ -10,6 +10,52 @@ def parse_time(minutes):
     return f"{hours:02d}:{minutes:02d}"
 
 
+def human_readable_time_to_minutes(time: str) -> int:
+    """Convert HH:MM format to minutes since midnight"""
+    hours, minutes = map(int, time.split(":"))
+    return hours * 60 + minutes
+
+
+@dataclasses.dataclass
+class SlotPreference:
+    weekday_lowercase: "str"
+    start_time: int
+    preferred_courts: list[int]
+
+    @classmethod
+    def from_preferences_json(cls, preferences_json: dict) -> "SlotPreference":
+        """
+        example preferences_json:
+        {
+            "preferences": [
+                {
+                    "weekdays": ["tuesday"],
+                    "time": "16:00",
+                    "courts": [3, 4]
+                },
+                {
+                    "weekdays": ["saturday"],
+                    "time": "08:00",
+                    "courts": [3, 4]
+                }
+            ]
+        }
+        """
+        result = {}
+        preferences = preferences_json["preferences"]
+        for pref in preferences:
+            weekdays = pref["weekdays"]
+            for weekday in weekdays:
+                if weekday in result:
+                    raise ValueError(f"Duplicate weekday: {weekday}")
+                result[weekday] = cls(
+                    weekday,
+                    human_readable_time_to_minutes(pref["time"]),
+                    pref["courts"],
+                )
+        return result
+
+
 @dataclasses.dataclass
 class Slot:
     slot_key: str  # uses data-test-id internally

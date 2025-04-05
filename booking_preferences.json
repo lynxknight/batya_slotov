@@ -1,0 +1,14 @@
+{
+    "preferences": [
+        {
+            "weekdays": ["tuesday"],
+            "time": "16:00",
+            "courts": [3, 4]
+        },
+        {
+            "weekdays": ["saturday"],
+            "time": "08:00",
+            "courts": [3, 4]
+        }
+    ]
+} 
