@@ -123,12 +123,12 @@ async def fetch_and_book_session(date: str, show: bool = False, slow_mo: int = 0
             # Get the page content and parse available sessions
             print("Get the page content and parse available sessions start")
             html_content = await page.content()
-            slot_key, slot_time = slots.find_slot(html_content, target_time, preferred_courts)
+            slot = slots.find_slot(html_content, target_time, preferred_courts)
             
-            if slot_key:
-                print(f"Found available session at {parse_time(slot_time)}")
+            if slot:
+                print(f"Found available session at {parse_time(slot.start_time)}")
                 print("Click on the earliest available session")
-                session_selector = f'[data-test-id="{slot_key}"]'
+                session_selector = f'[data-test-id="{slot.slot_key}"]'
                 await page.locator(session_selector).click()
                 if not no_booking:
                     await book_slot(page)

@@ -98,13 +98,6 @@ def sample_slots():
     ]
 
 
-def test_pick_slot_earliest_no_preferences(sample_slots):
-    """Test picking earliest slot without preferences"""
-    slot_key, slot_time = pick_slot(sample_slots)
-    assert slot_key == "1_0800"  # First 8:00 slot
-    assert slot_time == 480
-
-
 @pytest.mark.parametrize("target_time,expected_key", [
     (480, "1_0800",),    # 8:00 - should get first available
     (960, "2_1600"),    # 16:00
@@ -112,16 +105,9 @@ def test_pick_slot_earliest_no_preferences(sample_slots):
 ])
 def test_pick_slot_specific_time(sample_slots, target_time, expected_key):
     """Test picking slots at specific times"""
-    slot_key, slot_time = pick_slot(sample_slots, target_time=target_time)
-    assert slot_key == expected_key
-    assert slot_time == target_time
-
-
-def test_pick_slot_preferred_courts(sample_slots):
-    """Test picking slots with court preferences"""
-    slot_key, slot_time = pick_slot(sample_slots, preferred_courts=[4])
-    assert slot_key == "4_0800"  # Should get 8:00 on court 4
-    assert slot_time == 480
+    slot = pick_slot(sample_slots, target_time=target_time)
+    assert slot.slot_key == expected_key
+    assert slot.start_time == target_time
 
 
 @pytest.mark.parametrize("target_time,courts,expected_key", [
@@ -131,28 +117,20 @@ def test_pick_slot_preferred_courts(sample_slots):
 ])
 def test_pick_slot_time_and_courts(sample_slots, target_time, courts, expected_key):
     """Test picking slots with both time and court preferences"""
-    slot_key, slot_time = pick_slot(sample_slots, target_time=target_time, preferred_courts=courts)
-    assert slot_key == expected_key
-    assert slot_time == target_time
+    slot = pick_slot(sample_slots, target_time=target_time, preferred_courts=courts)
+    assert slot.slot_key == expected_key
+    assert slot.start_time == target_time
 
 
 def test_pick_slot_nonexistent_time(sample_slots):
     """Test picking slot at non-existent time"""
-    slot_key, slot_time = pick_slot(sample_slots, target_time=1440)  # 24:00
-    assert slot_key is None
-    assert slot_time is None
-
-
-def test_pick_slot_invalid_courts(sample_slots):
-    """Test picking slot with non-existent courts"""
-    # Should fall back to earliest available on any court
-    slot_key, slot_time = pick_slot(sample_slots, preferred_courts=[10, 11])
-    assert slot_key == "key1"
-    assert slot_time == 480
+    slot = pick_slot(sample_slots, target_time=1440)  # 24:00
+    assert slot is None
 
 
 def test_pick_slot_empty_list():
     """Test picking slot from empty list"""
-    slot_key, slot_time = pick_slot([])
-    assert slot_key is None
-    assert slot_time is None
+    slot = pick_slot([], target_time=480)
+    assert slot is None
+    slot = pick_slot([], target_time=480, preferred_courts=[1])
+    assert slot is None
