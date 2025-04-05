@@ -66,7 +66,7 @@ async def login(page, username, password):
     # Wait for navigation or login success indicator
     print("Wait for navigation or login success indicator")
     await page.wait_for_selector("#account-options", timeout=10000)
-    expect(page.locator("#account-options")).to_contain_text("Eduard Zhuk")
+    await expect(page.locator("#account-options")).to_contain_text("Eduard Zhuk")
 
 
 async def book_slot(page):
