@@ -13,6 +13,7 @@ def parse_time(minutes):
     minutes = minutes % 60
     return f"{hours:02d}:{minutes:02d}"
 
+
 def load_credentials():
     """Load username and password from .creds file"""
     with open('.creds', 'r') as f:
@@ -20,6 +21,7 @@ def load_credentials():
         if len(lines) < 2:
             raise ValueError("Credentials file must contain username on first line and password on second line")
         return lines[0].strip(), lines[1].strip()
+
 
 async def write_debug(path_to_file, page, exc: Exception = None):
     # Get the caller's frame (1 level up in the stack)
@@ -49,9 +51,9 @@ async def login(page, username, password):
     await page.get_by_role("link", name="Sign in").click()
     await page.get_by_role("button", name="Login").click()
     await page.get_by_placeholder("Username").fill(username)
-    await page.get_by_role("button", name="Log in").click()
     await page.get_by_placeholder("Password").click()
     await page.get_by_placeholder("Password").fill(password)
+    await page.get_by_role("button", name="Log in").click()
     # Wait for navigation or login success indicator
     print("Wait for navigation or login success indicator")
     await page.wait_for_selector('#account-options', timeout=10000)
@@ -66,8 +68,6 @@ async def book_slot(page):
     await page.wait_for_selector('h1:has-text("Your booking has been confirmed")', timeout=5000)
     print(f"Successfully booked session")
 
-    
-    # Return preferred slot if found, otherwise fallback slot
 
 async def accept_cookies(page):
     try:
@@ -76,6 +76,7 @@ async def accept_cookies(page):
     except:
         pass  # Cookie banner might not be present  
     
+
 async def fetch_and_book_session(date: str, show: bool = False, slow_mo: int = 0, no_booking: bool = False) -> None:
     """
     Fetch available sessions and book the earliest one
