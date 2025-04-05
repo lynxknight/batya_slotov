@@ -61,7 +61,7 @@ async def write_debug(path_to_file, page, exc: Exception = None):
         json.dump(serializable_locals, f, indent=2)
         if exc:
             f.write("\nException:\n")
-            f.write('\n'.join(traceback.format_exception(exc)))
+            f.write("\n".join(traceback.format_exception(exc)))
         f.write("-->\n")
         f.write(await page.content())
 
@@ -96,6 +96,22 @@ async def accept_cookies(page):
         await page.wait_for_timeout(500)
     except:
         pass  # Cookie banner might not be present
+
+
+async def does_booking_already_exist(page, target_date, target_time):
+    logger.info("Checking existing bookings")
+    await page.goto("https://clubspark.lta.org.uk/PrioryPark2/Booking/Bookings")
+    await page.wait_for_selector("#booking-tbody", timeout=5000)
+    bookings_html = await page.content()
+
+    booked_slots = slots.parse_slots_from_bookings_list(bookings_html)
+    for booked_slot in booked_slots:
+        if (
+            booked_slot.date.date() == target_date.date()
+            and booked_slot.start_time == target_time
+        ):
+            return True
+    return False
 
 
 async def fetch_and_book_session(
@@ -139,6 +155,13 @@ async def fetch_and_book_session(
             logger.info("Login process start")
             await accept_cookies(page)
             await login(page, username, password)
+
+            if await does_booking_already_exist(page, target_date, target_time):
+                logger.info(
+                    f"Already have a booking for {date} at {parse_time(target_time)}"
+                )
+                await browser.close()
+                return
 
             logger.info("Slot booking process start")
             page = await context.new_page()
