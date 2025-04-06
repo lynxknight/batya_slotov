@@ -10,6 +10,7 @@ from telegram.ext import (
     filters,
 )
 from telegram.constants import ParseMode
+import agent
 import telegram_booking_task
 import slots
 
@@ -136,6 +137,38 @@ class TelegramNotifier:
             logger.error(error_msg)
             await update.message.reply_text(error_msg)
 
+    async def view_bookings_command(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
+        """Handle the /view_bookings command"""
+        user_id = update.effective_user.id
+        logger.info(f"Received /view_bookings command from user {user_id}")
+
+        try:
+            logger.info(f"Trying to fetch bookings for {user_id}")
+            await update.message.reply_text("Fetching bookings...")
+            booked_slots = await agent.fetch_existing_bookings_standalone()
+            logger.info(f"Fetched {len(booked_slots)} bookings for {user_id}")
+
+            if not booked_slots:
+                await update.message.reply_text("📅 No existing bookings found.")
+                return
+
+            # Format message
+            message = "📅 Your Current Bookings:\n\n"
+            for slot in booked_slots:
+                date_str = slot.date.strftime("%A, %d %B %Y")
+                time_str = slots.parse_time(slot.start_time)
+                message += f"• {date_str} at {time_str} on Court {slot.court}\n"
+
+            await update.message.reply_text(message)
+            logger.info(f"Sent bookings to user {user_id}")
+
+        except Exception as e:
+            error_msg = f"❌ Failed to fetch bookings: {str(e)}"
+            logger.error(error_msg)
+            await update.message.reply_text(error_msg)
+
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle any message"""
         logger.info(
@@ -185,6 +218,9 @@ class TelegramNotifier:
             self.application.add_handler(CommandHandler("retry", self.retry_command))
             self.application.add_handler(
                 CommandHandler("view_schedule", self.view_schedule_command)
+            )
+            self.application.add_handler(
+                CommandHandler("view_bookings", self.view_bookings_command)
             )
             self.application.add_handler(
                 MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message)

@@ -85,12 +85,34 @@ async def fetch_existing_bookings(page) -> list[slots.Slot]:
     await page.goto("https://clubspark.lta.org.uk/PrioryPark2/Booking/Bookings")
     try:
         await page.wait_for_selector("#booking-tbody", timeout=1000)
-    except Exception as e:
+    except Exception:
         logger.info("Waiting for booking list failed, assuming no existing bookings")
         return []
 
     bookings_html = await page.content()
     return slots.parse_slots_from_bookings_list(bookings_html)
+
+
+async def fetch_existing_bookings_standalone() -> list[slots.Slot]:
+    """Standalone function to fetch existing bookings with full setup"""
+    username, password = load_credentials()
+
+    async with playwright.async_api.async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context()
+
+        logger.info("Browser set up")
+        async with dump_page_debug_info_on_exception(context):
+            page = await context.new_page()
+            await page.goto("https://clubspark.lta.org.uk/PrioryPark2/Booking/Bookings")
+            logger.info("Initial page loaded")
+
+            await accept_cookies(page)
+            logger.info("Cookies accepted")
+            await login(page, username, password)
+            logger.info("Logged in, going to fetch bookings")
+
+            return await fetch_existing_bookings(page)
 
 
 async def does_booking_already_exist(page, target_date, target_time):
