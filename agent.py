@@ -17,6 +17,7 @@ class PlaywrightParams:
     headless: bool = True
     slow_mo: int = 0
 
+
 @dataclasses.dataclass
 class BookingResult:
     success: bool
@@ -139,11 +140,11 @@ async def fetch_and_book_session(
     dry_run: bool = False,
 ) -> slots.Slot | None:
     """
-Fetch available sessions and book the earliest one
-    date: YYYY-MM-DD format
-    show: Whether to show the browser window during automation
-    slow_mo: Number of milliseconds to wait between actions (for visualization)
-    no_booking: If True, only check availability without making a booking
+    Fetch available sessions and book the earliest one
+        date: YYYY-MM-DD format
+        show: Whether to show the browser window during automation
+        slow_mo: Number of milliseconds to wait between actions (for visualization)
+        no_booking: If True, only check availability without making a booking
     """
 
     username, password = load_credentials()
@@ -158,7 +159,7 @@ Fetch available sessions and book the earliest one
         context = await browser.new_context()
 
         async with dump_page_debug_info_on_exception(context):
-            login_page= await context.new_page()
+            login_page = await context.new_page()
             # Initial page load and cookie acceptance
             logger.info("Initial page load start")
             await login_page.goto(
@@ -190,7 +191,12 @@ Fetch available sessions and book the earliest one
             if not slot:
                 # TODO: log which options were close
                 logger.warn("Found no slot for preferred time, return")
-                return BookingResult(success=False, slot=None, error=None, reason=f"Found no slot at {date_str} for preferred time {slots.parse_time(preference.start_time)}")
+                return BookingResult(
+                    success=False,
+                    slot=None,
+                    error=None,
+                    reason=f"Found no slot at {date_str} for preferred time {slots.parse_time(preference.start_time)}",
+                )
 
             logger.info(f"Found available slot at {parse_time(slot.start_time)}")
             logger.info("Click on the earliest available session")

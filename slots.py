@@ -57,7 +57,7 @@ class SlotPreference:
                     pref["courts"],
                 )
         return result
-    
+
     def __str__(self):
         return f"SlotPreference(weekday={self.weekday}, start_time={parse_time(self.start_time)}, preferred_courts={self.preferred_courts})"
 
@@ -136,7 +136,7 @@ def find_slot(
     available_slots = parse_slots(html_content)
     logger.info(f"Available slots: {available_slots}")
     if len(available_slots) == 0:
-        open('debug/13_apr_day_view.html', 'w').write(html_content)
+        open("debug/13_apr_day_view.html", "w").write(html_content)
         logger.warn("Written debug file as there are no available slots")
     picked_slot = pick_slot(available_slots, target_time, preferred_courts)
     if picked_slot is None:
