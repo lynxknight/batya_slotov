@@ -45,8 +45,11 @@ def load_credentials():
 
 
 async def login(page, username, password):
+    logger.info("Login start")
     await page.get_by_role("link", name="Sign in").click()
+    logger.info("Sign in clicked")
     await page.get_by_role("button", name="Login").click()
+    logger.info("Login clicked")
     await page.get_by_placeholder("Username").fill(username)
     await page.get_by_placeholder("Password").click()
     await page.get_by_placeholder("Password").fill(password)
@@ -93,18 +96,28 @@ async def fetch_existing_bookings(page) -> list[slots.Slot]:
     return slots.parse_slots_from_bookings_list(bookings_html)
 
 
-async def fetch_existing_bookings_standalone() -> list[slots.Slot]:
+async def fetch_existing_bookings_standalone(
+    playwright_params: PlaywrightParams | None = None,
+) -> list[slots.Slot]:
     """Standalone function to fetch existing bookings with full setup"""
     username, password = load_credentials()
 
     async with playwright.async_api.async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        if playwright_params is None:
+            browser = await p.chromium.launch(headless=True)
+        else:
+            browser = await p.chromium.launch(
+                headless=playwright_params.headless,
+                slow_mo=playwright_params.slow_mo,
+            )
         context = await browser.new_context()
 
         logger.info("Browser set up")
         async with dump_page_debug_info_on_exception(context):
             page = await context.new_page()
-            await page.goto("https://clubspark.lta.org.uk/PrioryPark2/Booking/Bookings")
+            await page.goto(
+                f"https://clubspark.lta.org.uk/PrioryPark2/Booking/BookByDate"
+            )
             logger.info("Initial page loaded")
 
             await accept_cookies(page)

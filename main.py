@@ -68,21 +68,26 @@ def get_active_preference(
 
 async def main():
     args = parse_args()
-    preferences = load_preferences(args.preferences_path)
-    target_date = datetime.datetime.strptime(
-        args.target_date, "%Y-%m-%d"
-    ) or datetime.datetime.now() + datetime.timedelta(days=7)
-    active_preference = get_active_preference(preferences, target_date)
+    # preferences = load_preferences(args.preferences_path)
+    target_date = (
+        datetime.datetime.strptime(args.target_date, "%Y-%m-%d")
+        if args.target_date
+        else datetime.datetime.now() + datetime.timedelta(days=7)
+    )
+    # active_preference = get_active_preference(preferences, target_date)
     playwright_params = agent.PlaywrightParams(
         headless=not args.show,
         slow_mo=args.slow,
     )
     try:
-        await agent.fetch_and_book_session(
-            target_date=target_date,
-            preference=active_preference,
+        # await agent.fetch_and_book_session(
+        #     target_date=target_date,
+        #     preference=active_preference,
+        #     playwright_params=playwright_params,
+        #     dry_run=args.dry_run,
+        # )
+        await agent.fetch_existing_bookings_standalone(
             playwright_params=playwright_params,
-            dry_run=args.dry_run,
         )
     except Exception as e:
         logger.error(f"Error during booking process: {e}")
