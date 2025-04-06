@@ -7,3 +7,4 @@ debug/
 .creds
 .debug.html
 .telegram_bot_token
+tst.py

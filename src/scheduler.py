@@ -2,8 +2,8 @@ import asyncio
 import schedule
 import logging
 import multiprocessing
-import time
 
+import env
 import telegram_bot
 
 # Configure logging
@@ -25,7 +25,7 @@ async def schedule_booking():
 
 def run_bot():
     """Run the Telegram bot in a separate process"""
-    asyncio.run(telegram_bot.notifier.start_bot())
+    asyncio.run(telegram_bot.get_notifier().start_bot())
 
 
 async def run_scheduler():
@@ -60,6 +60,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
+        env.setup_env()
         asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("Received shutdown signal")

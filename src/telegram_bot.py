@@ -1,16 +1,17 @@
-import asyncio
 import logging
 import json
+import os
+import functools
 from telegram import Bot, Update
 from telegram.ext import (
     Application,
     CommandHandler,
     ContextTypes,
-    MessageHandler,
-    filters,
 )
 from telegram.constants import ParseMode
+
 import agent
+import env
 import telegram_booking_task
 import slots
 
@@ -22,6 +23,27 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# List of authorized user IDs
+AUTHORIZED_USERS = (388546127, 1182153)
+
+
+def ensure_access(func):
+    """Decorator to ensure only authorized users can access the command"""
+
+    @functools.wraps(func)
+    async def wrapper(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user_id = update.effective_user.id
+        if user_id not in AUTHORIZED_USERS:
+            logger.warning(f"Unauthorized access attempt from user {user_id=}")
+            await update.message.reply_text(
+                "⛔️ You are not authorized to use this bot."
+            )
+            return
+        logger.info(f"Auth check passed for {user_id=}")
+        return await func(self, update, context)
+
+    return wrapper
+
 
 class TelegramNotifier:
     def __init__(self):
@@ -29,15 +51,13 @@ class TelegramNotifier:
         self.application = None
 
     def _load_telegram_token(self):
-        """Load Telegram bot token from .telegram file"""
-        with open("../.sensitive/.telegram_bot_token", "r") as f:
-            token = f.readline().strip()
-            if not token:
-                raise ValueError(
-                    "Telegram config file must contain bot token on first line"
-                )
-            logger.info(f"Loaded bot token: {token[:5]}...")
-            return token
+        """Load Telegram bot token from environment variable"""
+        token = os.getenv("TENNIS_BOT_TOKEN")
+        if not token:
+            raise ValueError("TENNIS_BOT_TOKEN environment variable must be set")
+
+        logger.info(f"Loaded bot token: {token[:5]}...")
+        return token
 
     @property
     def subscribed_users(self):
@@ -57,6 +77,7 @@ class TelegramNotifier:
             json.dump(list(users), f)
             logger.info(f"Saved {len(users)} subscribed users")
 
+    @ensure_access
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle the /start command"""
         logger.info(f"Received /start command from user {update.effective_user.id}")
@@ -76,6 +97,7 @@ class TelegramNotifier:
         )
         logger.info(f"User {user_id} subscribed successfully")
 
+    @ensure_access
     async def stop_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle the /stop command"""
         user_id = update.effective_user.id
@@ -92,6 +114,7 @@ class TelegramNotifier:
             await update.message.reply_text("You weren't subscribed to updates.")
             logger.info(f"User {user_id} tried to unsubscribe but wasn't subscribed")
 
+    @ensure_access
     async def retry_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle the /retry command"""
         user_id = update.effective_user.id
@@ -107,6 +130,7 @@ class TelegramNotifier:
         await update.message.reply_text("🔄 Retrying the last booking attempt...")
         await telegram_booking_task.run_booking_task(self)
 
+    @ensure_access
     async def view_schedule_command(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ):
@@ -137,6 +161,7 @@ class TelegramNotifier:
             logger.error(error_msg)
             await update.message.reply_text(error_msg)
 
+    @ensure_access
     async def view_bookings_command(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ):
@@ -169,6 +194,7 @@ class TelegramNotifier:
             logger.error(error_msg)
             await update.message.reply_text(error_msg)
 
+    @ensure_access
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle the /help command"""
         help_text = """Available commands:
@@ -255,15 +281,24 @@ class TelegramNotifier:
 
 async def run_booking_task():
     """Wrapper to run the booking task in a new event loop"""
-    global notifier
-    await telegram_booking_task.run_booking_task(notifier)
+    await telegram_booking_task.run_booking_task(get_notifier())
 
 
 # Create a global instance
-notifier = TelegramNotifier()
+_notifier: TelegramNotifier | None = None
+
+
+def get_notifier():
+    global _notifier
+    if _notifier is None:
+        env.setup_env()
+        _notifier = TelegramNotifier()
+    return _notifier
+
 
 if __name__ == "__main__":
     try:
-        notifier.start_bot()
+        env.setup_env()
+        get_notifier().start_bot()
     except KeyboardInterrupt:
         logger.info("Received shutdown signal")
