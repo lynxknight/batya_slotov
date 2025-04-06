@@ -101,15 +101,15 @@ async def fetch_existing_bookings_standalone(
 ) -> list[slots.Slot]:
     """Standalone function to fetch existing bookings with full setup"""
     username, password = load_credentials()
+    if playwright_params is None:
+        logger.info("No playwright params provided, using default")
+        playwright_params = PlaywrightParams(headless=True, slow_mo=0)
 
     async with playwright.async_api.async_playwright() as p:
-        if playwright_params is None:
-            browser = await p.chromium.launch(headless=True)
-        else:
-            browser = await p.chromium.launch(
-                headless=playwright_params.headless,
-                slow_mo=playwright_params.slow_mo,
-            )
+        browser = await p.chromium.launch(
+            headless=playwright_params.headless,
+            slow_mo=playwright_params.slow_mo,
+        )
         context = await browser.new_context()
 
         logger.info("Browser set up")
