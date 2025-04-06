@@ -5,6 +5,7 @@ from telegram import Bot, Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 from telegram.constants import ParseMode
 import telegram_booking_task
+import slots
 
 # Configure logging
 logging.basicConfig(
@@ -93,6 +94,34 @@ class TelegramNotifier:
             
         await update.message.reply_text("🔄 Retrying the last booking attempt...")
         await telegram_booking_task.run_booking_task(self)
+
+    async def view_schedule_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle the /view_schedule command"""
+        user_id = update.effective_user.id
+        logger.info(f"Received /view_schedule command from user {user_id}")
+        
+        try:
+            # Load preferences from file
+            with open('booking_preferences.json', 'r') as f:
+                preferences_json = json.load(f)
+            
+            # Convert to SlotPreference objects
+            preferences = slots.SlotPreference.from_preferences_json(preferences_json)
+            
+            # Format message
+            message = "Your schedule and preferences:\n\n"
+            for weekday, pref in preferences.items():
+                time_str = slots.parse_time(pref.start_time)
+                courts_str = ", ".join(map(str, pref.preferred_courts))
+                message += f"• {weekday.capitalize()}: {time_str} (prefer courts {courts_str})\n"
+            
+            await update.message.reply_text(message)
+            logger.info(f"Sent preferences to user {user_id}")
+            
+        except Exception as e:
+            error_msg = f"❌ Failed to load preferences: {str(e)}"
+            logger.error(error_msg)
+            await update.message.reply_text(error_msg)
             
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle any message"""
@@ -137,6 +166,7 @@ class TelegramNotifier:
             self.application.add_handler(CommandHandler("start", self.start_command))
             self.application.add_handler(CommandHandler("stop", self.stop_command))
             self.application.add_handler(CommandHandler("retry", self.retry_command))
+            self.application.add_handler(CommandHandler("view_schedule", self.view_schedule_command))
             self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
             
             logger.info("Starting polling")

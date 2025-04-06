@@ -5,3 +5,4 @@ debug/
 .cookies
 .creds
 .debug.html
+.telegram_bot_token
