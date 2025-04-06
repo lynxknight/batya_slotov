@@ -31,6 +31,7 @@ def run_bot():
 async def run_scheduler():
     """Run the scheduler loop"""
     while True:
+        logger.info("Running scheduler pending tasks...")
         schedule.run_pending()
         await asyncio.sleep(30)  # Check every 30 seconds
 
@@ -41,8 +42,7 @@ async def main():
     bot_process = multiprocessing.Process(target=run_bot)
     bot_process.start()
 
-    # Schedule for every day at 00:05 to check preferences
-    schedule.every().day.at("00:05").do(
+    schedule.every().day.at("00:10").do(
         lambda: asyncio.get_event_loop().create_task(schedule_booking())
     )
 

@@ -59,12 +59,8 @@ def load_preferences(config_path: str) -> list[dict]:
 
 
 def get_active_preference(
-    preferences: dict[str, slots.SlotPreference], target_date: str | None = None
+    preferences: dict[str, slots.SlotPreference], target_date: datetime.datetime
 ) -> typing.Optional[slots.SlotPreference]:
-    if target_date is None:
-        target_date = datetime.now() + datetime.timedelta(days=7)
-    else:
-        target_date = datetime.datetime.strptime(target_date, "%Y-%m-%d")
     weekday = target_date.strftime("%A").lower()  # Get day name in lowercase
     logger.info(f"Getting active preference for {target_date=} {weekday=}")
     return preferences[weekday]
@@ -73,10 +69,10 @@ def get_active_preference(
 async def main():
     args = parse_args()
     preferences = load_preferences(args.preferences_path)
-    active_preference = get_active_preference(preferences, args.target_date)
     target_date = datetime.datetime.strptime(
         args.target_date, "%Y-%m-%d"
-    ) or datetime.now() + datetime.timedelta(days=7)
+    ) or datetime.datetime.now() + datetime.timedelta(days=7)
+    active_preference = get_active_preference(preferences, target_date)
     playwright_params = agent.PlaywrightParams(
         headless=not args.show,
         slow_mo=args.slow,

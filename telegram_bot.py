@@ -151,11 +151,11 @@ class TelegramNotifier:
             logger.info(f"Fetched {len(booked_slots)} bookings for {user_id}")
 
             if not booked_slots:
-                await update.message.reply_text("📅 No existing bookings found.")
+                await update.message.reply_text("No existing bookings found.")
                 return
 
             # Format message
-            message = "📅 Your Current Bookings:\n\n"
+            message = "Current Bookings:\n\n"
             for slot in booked_slots:
                 date_str = slot.date.strftime("%A, %d %B %Y")
                 time_str = slots.parse_time(slot.start_time)
@@ -165,9 +165,25 @@ class TelegramNotifier:
             logger.info(f"Sent bookings to user {user_id}")
 
         except Exception as e:
-            error_msg = f"❌ Failed to fetch bookings: {str(e)}"
+            error_msg = f"Failed to fetch bookings: {str(e)}"
             logger.error(error_msg)
             await update.message.reply_text(error_msg)
+
+    async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle the /help command"""
+        help_text = """Available commands:
+
+/start - Subscribe to receive booking notifications and updates
+/stop - Unsubscribe from booking notifications
+/retry - manually run booking attempt
+/view_schedule - Displays your schedule
+/view_bookings - List existing bookings
+/help - Show this help message
+
+"""
+
+        await update.message.reply_text(help_text)
+        logger.info(f"Sent help message to user {update.effective_user.id}")
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle any message"""
@@ -222,9 +238,7 @@ class TelegramNotifier:
             self.application.add_handler(
                 CommandHandler("view_bookings", self.view_bookings_command)
             )
-            self.application.add_handler(
-                MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message)
-            )
+            self.application.add_handler(CommandHandler("help", self.help_command))
 
             logger.info("Starting polling")
             self.application.run_polling()
