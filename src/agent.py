@@ -4,6 +4,7 @@ import datetime
 import logging
 import traceback
 import playwright.async_api
+import os
 
 import slots
 
@@ -35,18 +36,15 @@ def parse_time(minutes):
 
 def load_credentials():
     """Load username and password from separate files"""
-    try:
-        with open(".sensitive/.username", "r") as f:
-            username = f.readline().strip()
-        with open(".sensitive/.password", "r") as f:
-            password = f.readline().strip()
+    username = os.getenv("TENNIS_USERNAME")
+    password = os.getenv("TENNIS_PASSWORD")
 
-        if not username or not password:
-            raise ValueError("Username and password files must not be empty")
+    if not username or not password:
+        raise ValueError(
+            "TENNIS_USERNAME and TENNIS_PASSWORD environment variables must be set"
+        )
 
-        return username, password
-    except FileNotFoundError as e:
-        raise ValueError(f"Missing credential file: {e.filename}")
+    return username, password
 
 
 async def login(page, username, password):

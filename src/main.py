@@ -5,6 +5,7 @@ import datetime
 import json
 import os
 import typing
+from pathlib import Path
 
 import agent
 import slots
@@ -94,5 +95,41 @@ async def main():
         raise
 
 
+def load_credentials_from_files():
+    """Load credentials from files and set them as environment variables"""
+    try:
+        # Get the directory of the current script
+        current_dir = Path(__file__).parent.parent
+
+        # Read username
+        username_file = current_dir / ".sensitive" / ".username"
+        if not username_file.exists():
+            raise FileNotFoundError(f"Username file not found at {username_file}")
+        with open(username_file, "r") as f:
+            username = f.readline().strip()
+            if not username:
+                raise ValueError("Username file is empty")
+            os.environ["TENNIS_USERNAME"] = username
+
+        # Read password
+        password_file = current_dir / ".sensitive" / ".password"
+        if not password_file.exists():
+            raise FileNotFoundError(f"Password file not found at {password_file}")
+        with open(password_file, "r") as f:
+            password = f.readline().strip()
+            if not password:
+                raise ValueError("Password file is empty")
+            os.environ["TENNIS_PASSWORD"] = password
+
+        logger.info("Successfully loaded credentials from files")
+
+    except Exception as e:
+        logger.error(f"Failed to load credentials: {e}")
+        raise
+
+
 if __name__ == "__main__":
+    # Load credentials from files
+    load_credentials_from_files()
+
     asyncio.run(main())
