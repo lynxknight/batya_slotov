@@ -82,6 +82,7 @@ async def accept_cookies(page):
         await page.get_by_role("button", name="Accept All").click()
         await page.wait_for_timeout(500)
     except:
+        logger.info("Assuming cookie banner is not present")
         pass  # Cookie banner might not be present
 
 

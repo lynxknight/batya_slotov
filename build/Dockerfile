@@ -1,5 +1,5 @@
 # Use Python 3.11.11 as base image
-FROM --platform=linux/amd64 python:3.11.11-slim
+FROM --platform=linux/arm64/v8 python:3.11.11-slim
 
 # Set working directory
 WORKDIR /app
