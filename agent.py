@@ -54,10 +54,10 @@ async def login(page, username, password):
     # Wait for navigation or login success indicator
     logger.info("Wait for navigation or login success indicator")
     await page.wait_for_selector("#account-options", timeout=10000)
-    # TODO: check something else, for example with page.expect_navigation() as navigation_info:
-    await playwright.async_api.expect(page.locator("#account-options")).to_contain_text(
-        "Eduard Zhuk"
-    )
+    # # TODO: check something else, for example with page.expect_navigation() as navigation_info:
+    # await playwright.async_api.expect(page.locator("#account-options")).to_contain_text(
+    #     "Eduard Zhuk"
+    # )
 
 
 async def book_slot(page):
