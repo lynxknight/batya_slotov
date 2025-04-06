@@ -31,10 +31,11 @@ async def new_context(browser):
     if os.getenv("ZYTE_API_KEY"):
         logger.info("Using Zyte proxy for context")
         return await browser.new_context(
+            ignore_https_errors=True,
             proxy={
-                "server": "api.zyte.com:8011",
+                "server": "https://api.zyte.com:8014",
                 "username": os.getenv("ZYTE_API_KEY"),
-            }
+            },
         )
     return await browser.new_context()
 
@@ -131,6 +132,7 @@ async def fetch_existing_bookings_standalone(
         logger.info("Browser set up")
         async with dump_page_debug_info_on_exception(context):
             page = await context.new_page()
+            logger.info("New page created")
             await page.goto(
                 f"https://clubspark.lta.org.uk/PrioryPark2/Booking/BookByDate"
             )

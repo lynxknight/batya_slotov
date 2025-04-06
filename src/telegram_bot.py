@@ -185,7 +185,7 @@ class TelegramNotifier:
 
         except Exception as e:
             error_msg = f"Failed to fetch bookings: {str(e)}"
-            logger.error(error_msg)
+            logger.exception(e)
             await update.message.reply_text(error_msg)
 
     @ensure_access
