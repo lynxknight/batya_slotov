@@ -35,9 +35,6 @@ def parse_time(minutes):
 
 def load_credentials():
     """Load username and password from separate files"""
-    import pdb
-
-    pdb.set_trace()
     try:
         with open(".sensitive/.username", "r") as f:
             username = f.readline().strip()
