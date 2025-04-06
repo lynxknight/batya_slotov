@@ -4,7 +4,7 @@ import logging
 import multiprocessing
 import time
 
-import telegram_notifier
+import telegram_bot
 
 # Configure logging
 logging.basicConfig(
@@ -17,13 +17,13 @@ logger = logging.getLogger(__name__)
 async def schedule_booking():
     """Run the booking task"""
     try:
-        await telegram_notifier.run_booking_task()
+        await telegram_bot.run_booking_task()
     except Exception as e:
         logger.error(f"Error in booking task: {e}")
 
 def run_bot():
     """Run the Telegram bot in a separate process"""
-    asyncio.run(telegram_notifier.notifier.start_bot())
+    asyncio.run(telegram_bot.notifier.start_bot())
 
 async def run_scheduler():
     """Run the scheduler loop"""
