@@ -79,17 +79,23 @@ async def accept_cookies(page):
         pass  # Cookie banner might not be present
 
 
-async def does_booking_already_exist(page, target_date, target_time):
-    logger.info("Checking existing bookings")
+async def fetch_existing_bookings(page) -> list[slots.Slot]:
+    """Fetch all existing bookings from the bookings page"""
+    logger.info("Fetching existing bookings")
     await page.goto("https://clubspark.lta.org.uk/PrioryPark2/Booking/Bookings")
     try:
         await page.wait_for_selector("#booking-tbody", timeout=1000)
     except Exception as e:
         logger.info("Waiting for booking list failed, assuming no existing bookings")
-        return False
+        return []
 
     bookings_html = await page.content()
-    booked_slots = slots.parse_slots_from_bookings_list(bookings_html)
+    return slots.parse_slots_from_bookings_list(bookings_html)
+
+
+async def does_booking_already_exist(page, target_date, target_time):
+    """Check if a booking already exists for the given date and time"""
+    booked_slots = await fetch_existing_bookings(page)
     for booked_slot in booked_slots:
         if (
             booked_slot.date.date() == target_date.date()
