@@ -1,4 +1,0 @@
-0) view bookings and preferences command
-1) setup deploy, ensure it runs on 00-05
-2) add comand to manually do check according to preferred schedule (let's say for next week)
-3) expand to visard-like capabilities? 
