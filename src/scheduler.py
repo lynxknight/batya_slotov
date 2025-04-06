@@ -6,12 +6,6 @@ import multiprocessing
 import env
 import telegram_bot
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s,%(msecs)03d - [%(levelname)-8s] - [%(filename)s:%(lineno)d] - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
 logger = logging.getLogger(__name__)
 
 
@@ -23,11 +17,6 @@ async def schedule_booking():
         logger.error(f"Error in booking task: {e}")
 
 
-def run_bot():
-    """Run the Telegram bot in a separate process"""
-    asyncio.run(telegram_bot.get_notifier().start_bot())
-
-
 async def run_scheduler():
     """Run the scheduler loop"""
     while True:
@@ -36,11 +25,8 @@ async def run_scheduler():
         await asyncio.sleep(30)  # Check every 30 seconds
 
 
-async def main():
-    # Start the Telegram bot in a separate process
-    logger.info("Starting Telegram bot")
-    bot_process = multiprocessing.Process(target=run_bot)
-    bot_process.start()
+async def main(bot_process: multiprocessing.Process):
+    logger.info("Starting scheduler")
 
     schedule.every().day.at("00:10").do(
         lambda: asyncio.get_event_loop().create_task(schedule_booking())
@@ -61,6 +47,11 @@ async def main():
 if __name__ == "__main__":
     try:
         env.setup_env()
-        asyncio.run(main())
+        logger.info("Starting Telegram bot")
+        bot_process = multiprocessing.Process(
+            target=telegram_bot.get_notifier().start_bot
+        )
+        bot_process.start()
+        asyncio.run(main(bot_process))
     except KeyboardInterrupt:
         logger.info("Received shutdown signal")

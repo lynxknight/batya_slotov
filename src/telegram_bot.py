@@ -4,7 +4,7 @@ import os
 import functools
 from telegram import Bot, Update
 from telegram.ext import (
-    Application,
+    ApplicationBuilder,
     CommandHandler,
     ContextTypes,
 )
@@ -15,12 +15,6 @@ import env
 import telegram_booking_task
 import slots
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s.%(msecs)03d [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
 logger = logging.getLogger(__name__)
 
 # List of authorized user IDs
@@ -252,7 +246,7 @@ class TelegramNotifier:
         """Start the bot application"""
         try:
             logger.info("Starting bot application")
-            self.application = Application.builder().token(self.bot_token).build()
+            self.application = ApplicationBuilder().token(self.bot_token).build()
 
             logger.info("Adding command handlers")
             self.application.add_handler(CommandHandler("start", self.start_command))

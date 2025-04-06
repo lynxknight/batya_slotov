@@ -2,11 +2,21 @@ import logging
 import os
 from pathlib import Path
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s,%(msecs)03d - [%(levelname)-8s] - [%(filename)s:%(lineno)d] - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 logger = logging.getLogger(__name__)
 
 
 def setup_env():
+    target_envs = ["TENNIS_USERNAME", "TENNIS_PASSWORD", "TENNIS_BOT_TOKEN"]
     """Load credentials and bot token from files and set them as environment variables"""
+    if all(os.environ.get(env) for env in target_envs):
+        logger.info("All environment variables are set, skipping setup")
+        return
+    logger.info("Not all environment variables are set, assume loading from files")
     try:
         # Get the directory of the current script
         current_dir = Path(__file__).parent.parent

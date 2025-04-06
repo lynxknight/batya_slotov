@@ -25,17 +25,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 \
     && rm -rf /var/lib/apt/lists/*
 
+# Create a non-root user first
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
+
+# Switch to the non-root user
+USER appuser
+
 # Copy and install requirements first to leverage Docker cache
 COPY build/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers
+# Install Playwright browsers as the non-root user
+ENV PLAYWRIGHT_BROWSERS_PATH=/home/appuser/.cache/ms-playwright
 RUN python -m playwright install chromium
-
-# Create a non-root user
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
-USER appuser
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -43,7 +46,7 @@ ENV PYTHONPATH=/app
 
 # Copy application code (this should be the last step to leverage Docker cache)
 COPY src/ /app/src/
-COPY booking_preferences.json /app/src/
+COPY booking_preferences.json /app
 
 # Command to run the application
-CMD ["python", "src/main.py"] 
+CMD ["python", "src/scheduler.py"] 
