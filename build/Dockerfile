@@ -41,7 +41,7 @@ USER appuser
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
-# Copy application code (this should be the last step to leverage Docker cache)
+# Copy application code and configuration files
 COPY src/ /app/src/
 COPY booking_preferences.json /app/src/
 

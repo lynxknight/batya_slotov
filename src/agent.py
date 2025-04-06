@@ -34,14 +34,22 @@ def parse_time(minutes):
 
 
 def load_credentials():
-    """Load username and password from .creds file"""
-    with open("../.sensitive/.creds", "r") as f:
-        lines = f.readlines()
-        if len(lines) < 2:
-            raise ValueError(
-                "Credentials file must contain username on first line and password on second line"
-            )
-        return lines[0].strip(), lines[1].strip()
+    """Load username and password from separate files"""
+    import pdb
+
+    pdb.set_trace()
+    try:
+        with open(".sensitive/.username", "r") as f:
+            username = f.readline().strip()
+        with open(".sensitive/.password", "r") as f:
+            password = f.readline().strip()
+
+        if not username or not password:
+            raise ValueError("Username and password files must not be empty")
+
+        return username, password
+    except FileNotFoundError as e:
+        raise ValueError(f"Missing credential file: {e.filename}")
 
 
 async def login(page, username, password):
