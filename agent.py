@@ -17,6 +17,13 @@ class PlaywrightParams:
     headless: bool = True
     slow_mo: int = 0
 
+@dataclasses.dataclass
+class BookingResult:
+    success: bool
+    slot: slots.Slot | None
+    error: Exception | None
+    reason: str | None
+
 
 def parse_time(minutes):
     """Convert minutes since midnight to HH:MM format"""
@@ -98,6 +105,8 @@ async def setup_booking_page(context, date_str):
         f"https://clubspark.lta.org.uk/PrioryPark2/Booking/BookByDate#?date={date_str}&role=guest"
     )
     await page.wait_for_selector(".resource-session", timeout=5000)
+    await page.wait_for_timeout(3000)
+    return page
 
 
 @contextlib.asynccontextmanager
@@ -130,7 +139,7 @@ async def fetch_and_book_session(
     dry_run: bool = False,
 ) -> slots.Slot | None:
     """
-    Fetch available sessions and book the earliest one
+Fetch available sessions and book the earliest one
     date: YYYY-MM-DD format
     show: Whether to show the browser window during automation
     slow_mo: Number of milliseconds to wait between actions (for visualization)
@@ -149,30 +158,29 @@ async def fetch_and_book_session(
         context = await browser.new_context()
 
         async with dump_page_debug_info_on_exception(context):
-            page = await context.new_page()
+            login_page= await context.new_page()
             # Initial page load and cookie acceptance
             logger.info("Initial page load start")
-            await page.goto(
+            await login_page.goto(
                 f"https://clubspark.lta.org.uk/PrioryPark2/Booking/BookByDate#?date={date_str}&role=guest"
             )
 
             logger.info("Login process start")
-            await accept_cookies(page)
-            await login(page, username, password)
+            await accept_cookies(login_page)
+            await login(login_page, username, password)
 
-            if await does_booking_already_exist(page, target_date, target_time):
+            if await does_booking_already_exist(login_page, target_date, target_time):
                 logger.info(
                     f"Already have a booking for {target_date} at {parse_time(target_time)}"
                 )
-                await browser.close()
                 return
 
             logger.info("Slot booking process start")
-            await setup_booking_page(context, date_str)
+            booking_page = await setup_booking_page(context, date_str)
 
             # Get the page content and parse available sessions
             logger.info("Get the page content and parse available sessions start")
-            html_content = await page.content()
+            html_content = await booking_page.content()
             slot = slots.find_slot(
                 html_content,
                 target_time,
@@ -182,14 +190,14 @@ async def fetch_and_book_session(
             if not slot:
                 # TODO: log which options were close
                 logger.warn("Found no slot for preferred time, return")
-                return
+                return BookingResult(success=False, slot=None, error=None, reason=f"Found no slot at {date_str} for preferred time {slots.parse_time(preference.start_time)}")
 
             logger.info(f"Found available slot at {parse_time(slot.start_time)}")
             logger.info("Click on the earliest available session")
-            await page.locator(f'[data-test-id="{slot.slot_key}"]').click()
+            await booking_page.locator(f'[data-test-id="{slot.slot_key}"]').click()
             if dry_run:
                 logger.info("Dry run, skipping booking")
-                return None
-            await book_slot(page)
+                return BookingResult(success=False, slot=slot, error=None)
+            await book_slot(booking_page)
             logger.info("Booking process completed")
-            return slot
+            return BookingResult(success=True, slot=slot, error=None)

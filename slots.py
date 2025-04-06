@@ -1,6 +1,9 @@
 import dataclasses
 from bs4 import BeautifulSoup
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def parse_time(minutes):
@@ -128,6 +131,10 @@ def find_slot(
         Slot object if found, None if no slot is available
     """
     available_slots = parse_slots(html_content)
+    logger.info(f"Available slots: {available_slots}")
+    if len(available_slots) == 0:
+        open('debug/13_apr_day_view.html', 'w').write(html_content)
+        logger.warn("Written debug file as there are no available slots")
     picked_slot = pick_slot(available_slots, target_time, preferred_courts)
     if picked_slot is None:
         return None
