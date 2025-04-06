@@ -27,6 +27,18 @@ class BookingResult:
     reason: str | None
 
 
+async def new_context(browser):
+    if os.getenv("ZYTE_API_KEY"):
+        logger.info("Using Zyte proxy for context")
+        return await browser.new_context(
+            proxy={
+                "server": "api.zyte.com:8011",
+                "username": os.getenv("ZYTE_API_KEY"),
+            }
+        )
+    return await browser.new_context()
+
+
 def parse_time(minutes):
     """Convert minutes since midnight to HH:MM format"""
     hours = minutes // 60
@@ -114,7 +126,7 @@ async def fetch_existing_bookings_standalone(
             headless=playwright_params.headless,
             slow_mo=playwright_params.slow_mo,
         )
-        context = await browser.new_context()
+        context = await new_context(browser)
 
         logger.info("Browser set up")
         async with dump_page_debug_info_on_exception(context):
@@ -201,7 +213,7 @@ async def fetch_and_book_session(
         browser = await p.chromium.launch(
             headless=playwright_params.headless, slow_mo=playwright_params.slow_mo
         )
-        context = await browser.new_context()
+        context = await new_context(browser)
 
         async with dump_page_debug_info_on_exception(context):
             login_page = await context.new_page()
