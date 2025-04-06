@@ -30,7 +30,7 @@ class TelegramNotifier:
 
     def _load_telegram_token(self):
         """Load Telegram bot token from .telegram file"""
-        with open(".telegram_bot_token", "r") as f:
+        with open("../.sensitive/.telegram_bot_token", "r") as f:
             token = f.readline().strip()
             if not token:
                 raise ValueError(

@@ -35,7 +35,7 @@ def parse_time(minutes):
 
 def load_credentials():
     """Load username and password from .creds file"""
-    with open(".creds", "r") as f:
+    with open("../.sensitive/.creds", "r") as f:
         lines = f.readlines()
         if len(lines) < 2:
             raise ValueError(
