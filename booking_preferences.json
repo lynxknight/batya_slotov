@@ -6,7 +6,7 @@
             "courts": [3, 4]
         },
         {
-            "weekdays": ["saturday", "monday"],
+            "weekdays": ["saturday"],
             "time": "08:00",
             "courts": [3, 4]
         }
