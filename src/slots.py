@@ -59,7 +59,7 @@ class SlotPreference:
         return result
 
     def __str__(self):
-        return f"SlotPreference(weekday={self.weekday}, start_time={parse_time(self.start_time)}, preferred_courts={self.preferred_courts})"
+        return f"SlotPreference(weekday={self.weekday_lowercase}, start_time={parse_time(self.start_time)}, preferred_courts={self.preferred_courts})"
 
 
 @dataclasses.dataclass

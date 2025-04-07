@@ -115,11 +115,9 @@ class TelegramNotifier:
         logger.info(f"Received /retry command from user {user_id}")
 
         if user_id not in self.subscribed_users:
-            await update.message.reply_text(
-                "❌ You need to be subscribed to use the /retry command."
+            logger.info(
+                f"User {user_id} tried to retry but wasn't subscribed. Allow, but it is weird. {self.subscribed_users=}"
             )
-            logger.info(f"User {user_id} tried to retry but wasn't subscribed")
-            return
 
         await update.message.reply_text("🔄 Retrying the last booking attempt...")
         await telegram_booking_task.run_booking_task(self)

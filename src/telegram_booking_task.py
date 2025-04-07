@@ -37,7 +37,7 @@ async def run_booking_task(notifier):
             preference=pref,
             target_date=target_date,
             playwright_params=agent.PlaywrightParams(
-                headless=False,
+                headless=True,
                 slow_mo=0,
             ),
         )

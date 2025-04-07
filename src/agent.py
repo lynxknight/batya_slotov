@@ -24,7 +24,7 @@ class BookingResult:
     success: bool
     slot: slots.Slot | None
     error: Exception | None
-    reason: str | None
+    reason: str | None = ""
 
 
 async def new_context(browser):
@@ -262,7 +262,9 @@ async def fetch_and_book_session(
             await booking_page.locator(f'[data-test-id="{slot.slot_key}"]').click()
             if dry_run:
                 logger.info("Dry run, skipping booking")
-                return BookingResult(success=False, slot=slot, error=None)
+                return BookingResult(
+                    success=False, slot=slot, error=None, reason="Dry run"
+                )
             await book_slot(booking_page)
             logger.info("Booking process completed")
             return BookingResult(success=True, slot=slot, error=None)
