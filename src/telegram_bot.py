@@ -151,6 +151,7 @@ class TelegramNotifier:
         except Exception as e:
             error_msg = f"❌ Failed to load preferences: {str(e)}"
             logger.error(error_msg)
+            logger.exception(e)
             await update.message.reply_text(error_msg)
 
     @ensure_access
@@ -229,6 +230,7 @@ class TelegramNotifier:
                     )
                     logger.info(f"Message sent successfully to user {user_id}")
                 except Exception as e:
+                    logger.exception(e)
                     logger.error(f"Failed to send message to user {user_id}: {e}")
                     # Remove user if we can't send messages to them
                     users.remove(user_id)
@@ -237,6 +239,7 @@ class TelegramNotifier:
             return True
 
         except Exception as e:
+            logger.exception(e)
             logger.error(f"Error sending Telegram message: {e}")
             return False
 
@@ -261,6 +264,7 @@ class TelegramNotifier:
             logger.info("Starting polling")
             self.application.run_polling()
         except Exception as e:
+            logger.exception(e)
             logger.error(f"Error in start_bot: {e}")
             raise
 

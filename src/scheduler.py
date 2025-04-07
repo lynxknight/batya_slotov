@@ -14,8 +14,8 @@ async def schedule_booking():
     try:
         await telegram_bot.run_booking_task()
     except Exception as e:
-        logger.error(f"Error in booking task: {e}")
         logger.exception(e)
+        logger.error(f"Error in booking task: {e}")
 
 
 async def run_scheduler():
