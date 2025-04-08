@@ -43,6 +43,7 @@ See `rebuild_and_run.sh`
 
 ## TODO
 
+0) fix usage of "subsribed_users" file
 1) Cancel booking via bot 
 2) Multiple accounts in one bot
 3) Edit preferences via bot or something like this 
