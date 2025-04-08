@@ -39,3 +39,14 @@ A comprehensive system for automating tennis court bookings with Telegram notifi
 ## How to run
 
 See `rebuild_and_run.sh`
+
+
+## TODO
+
+1) Cancel booking via bot 
+2) Multiple accounts in one bot
+3) Edit preferences via bot or something like this 
+4) store data in persistent storage
+
+Extra:
+1) Natural language-based commands
