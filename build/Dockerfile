@@ -47,6 +47,8 @@ ENV PYTHONPATH=/app
 # Copy application code (this should be the last step to leverage Docker cache)
 COPY src/ /app/src/
 COPY booking_preferences.json /app
+COPY subscribed_users.json /app
+
 RUN mkdir debug/
 
 # Command to run the application

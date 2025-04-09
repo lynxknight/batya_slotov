@@ -71,6 +71,8 @@ async def login(page, username, password):
     await page.get_by_placeholder("Password").fill(password)
     await page.get_by_role("button", name="Log in").click()
     # Wait for navigation or login success indicator
+    logger.info("Wait for network idle")
+    await page.wait_for_load_state("networkidle")
     logger.info("Wait for navigation or login success indicator")
     await page.wait_for_selector("#account-options", timeout=10000)
     # # TODO: check something else, for example with page.expect_navigation() as navigation_info:
@@ -184,11 +186,16 @@ async def dump_page_debug_info_on_exception(context, path_to_file=None):
                 f.write("\nException:\n")
                 f.write("\n".join(traceback.format_exception(exc)))
             f.write("-->\n")
-            for page in context.pages:
+            for i, page in enumerate(context.pages):
                 f.write("<!--\n")
-                f.write("Next page")
+                f.write(f"Page {i}")
                 f.write("-->\n")
                 f.write(await page.content())
+                try:
+                    await page.screenshot(path=f"debug/page_{i}.png")
+                except Exception as ex:
+                    logger.warn("failed to store screenshot ")
+                    logger.exception(ex)
         raise
 
 
