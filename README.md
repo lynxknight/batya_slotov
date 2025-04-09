@@ -43,11 +43,12 @@ See `rebuild_and_run.sh`
 
 ## TODO
 
-0) fix usage of "subsribed_users" file
-1) Cancel booking via bot 
-2) Multiple accounts in one bot
-3) Edit preferences via bot or something like this 
-4) store data in persistent storage
+[x] Fix usage of "subsribed_users" file--
+[ ] In case of problem with an agent, send page screenshot to creator to have easier time debugging
+[ ] Cancel booking via bot 
+[ ] Multiple accounts in one bot
+[ ] Edit preferences via bot or something like this 
+[ ] store data in persistent storage
 
 Extra:
-1) Natural language-based commands
+[ ] Natural language-based commands
