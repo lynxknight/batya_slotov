@@ -186,16 +186,30 @@ async def dump_page_debug_info_on_exception(context, path_to_file=None):
                 f.write("\nException:\n")
                 f.write("\n".join(traceback.format_exception(exc)))
             f.write("-->\n")
+            debug_images = []
             for i, page in enumerate(context.pages):
                 f.write("<!--\n")
                 f.write(f"Page {i}")
                 f.write("-->\n")
                 f.write(await page.content())
+                image_path = f"debug/page_{i}.png"
                 try:
-                    await page.screenshot(path=f"debug/page_{i}.png")
+                    await page.screenshot(path=image_path)
+                    debug_images.append(image_path)
                 except Exception as ex:
                     logger.warn("failed to store screenshot ")
                     logger.exception(ex)
+            logger.info("trying to set debug images")
+            for img in debug_images:
+                from telegram_bot import get_notifier
+
+                logger.info(f"sending image {img}...")
+                try:
+                    await get_notifier().send_debug_picture_to_owner(img)
+                except Exception as exc2:
+                    logger.exception(exc2)
+                else:
+                    logger.info(f"sent image {img}")
         raise
 
 

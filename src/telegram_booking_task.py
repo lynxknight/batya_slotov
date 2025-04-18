@@ -24,7 +24,7 @@ async def run_booking_task(notifier):
     if pref is None:
         message = f"No booking preferences found for {weekday}. Skipping booking for {date_str}"
         logger.info(message)
-        await notifier.send_message(message, disable_notification=True)
+        # await notifier.send_message(message, disable_notification=True)
         return
 
     message = (

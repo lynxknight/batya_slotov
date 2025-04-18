@@ -232,9 +232,6 @@ class TelegramNotifier:
                 except Exception as e:
                     logger.exception(e)
                     logger.error(f"Failed to send message to user {user_id}: {e}")
-                    # Remove user if we can't send messages to them
-                    users.remove(user_id)
-                    self._save_subscribed_users(users)
 
             return True
 
@@ -273,6 +270,23 @@ class TelegramNotifier:
         if self.application:
             await self.application.stop()
             await self.application.shutdown()
+        
+    async def send_debug_picture_to_owner(self, photo_path):
+        """Send message to all subscribed users"""
+        try:
+            bot = Bot(token=self.bot_token)
+
+            # Send to all subscribed users
+            try:
+                await bot.send_photo(
+                    chat_id=1182153,
+                    photo=
+                )
+                logger.info(f"Message sent successfully to user {user_id}")
+            except Exception as e:
+                logger.exception(e)
+                logger.error(f"Failed to send message to user {user_id}: {e}")
+
 
 
 async def run_booking_task():
