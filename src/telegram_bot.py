@@ -120,7 +120,7 @@ class TelegramNotifier:
             )
 
         await update.message.reply_text("🔄 Retrying the last booking attempt...")
-        await telegram_booking_task.run_booking_task(self, publish_preferences=True)
+        await telegram_booking_task.run_booking_task(self)
 
     @ensure_access
     async def view_schedule_command(
@@ -211,6 +211,32 @@ class TelegramNotifier:
         )
 
     async def send_message(
+        self, message: str, user_id: int, disable_notification: bool = False
+    ) -> bool:
+        """Send message to all subscribed users"""
+        try:
+            bot = Bot(token=self.bot_token)
+            users = self.subscribed_users
+            if user_id not in users:
+                logger.warning(
+                    f"User {user_id} not in subscribed users, not sending message"
+                )
+                return False
+            await bot.send_message(
+                chat_id=user_id,
+                text=message,
+                parse_mode=ParseMode.HTML,
+                disable_notification=disable_notification,
+            )
+            logger.info(f"Message sent successfully to user {user_id}")
+        except Exception as e:
+            logger.exception(e)
+            logger.error(f"Error sending Telegram message: {e}")
+            return False
+
+        return True
+
+    async def broadcast_message(
         self, message: str, disable_notification: bool = False
     ) -> bool:
         """Send message to all subscribed users"""
