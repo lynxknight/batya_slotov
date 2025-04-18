@@ -7,7 +7,7 @@ import slots
 logger = logging.getLogger(__name__)
 
 
-async def run_booking_task(notifier):
+async def run_booking_task(notifier, publish_preferences=False):
     """Run the booking task. This function can be called directly for retries."""
     # Calculate target date (1 week ahead)
     target_date = datetime.now() + timedelta(days=7)
@@ -24,7 +24,8 @@ async def run_booking_task(notifier):
     if pref is None:
         message = f"No booking preferences found for {weekday}. Skipping booking for {date_str}"
         logger.info(message)
-        # await notifier.send_message(message, disable_notification=True)
+        if publish_preferences:
+            await notifier.send_message(message, disable_notification=True)
         return
 
     message = (
