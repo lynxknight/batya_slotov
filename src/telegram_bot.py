@@ -120,7 +120,7 @@ class TelegramNotifier:
             )
 
         await update.message.reply_text("🔄 Retrying the last booking attempt...")
-        await telegram_booking_task.run_booking_task(self)
+        await telegram_booking_task.run_booking_task(self, publish_preferences=True)
 
     @ensure_access
     async def view_schedule_command(
