@@ -172,14 +172,15 @@ async def setup_booking_page(context, date_str):
 
 
 @contextlib.asynccontextmanager
-async def dump_page_debug_info_on_exception(context, path_to_file=None):
-    if path_to_file is None:
-        path_to_file = DEBUG_PATH
+async def dump_page_debug_info_on_exception(context, debug_folder=None):
+    if debug_folder is None:
+        debug_folder = "debug"
     # Get the caller's frame (1 level up in the stack)
     try:
         yield
     except Exception as exc:
-        with open(path_to_file, "w") as f:
+        debug_html_path = os.path.join(debug_folder, "debug.html")
+        with open(debug_html_path, "w") as f:
             # Write to file as JSON
             f.write("<!--\n")
             if exc:
@@ -192,7 +193,7 @@ async def dump_page_debug_info_on_exception(context, path_to_file=None):
                 f.write(f"Page {i}")
                 f.write("-->\n")
                 f.write(await page.content())
-                image_path = f"debug/page_{i}.png"
+                image_path = os.path.join(debug_folder, f"page_{i}.png")
                 try:
                     await page.screenshot(path=image_path)
                     debug_images.append(image_path)
