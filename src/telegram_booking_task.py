@@ -35,7 +35,7 @@ async def run_booking_task(notifier, user_id: None | int = None):
         f"Based on preferences for {weekday=}, we should try to book something! {pref}"
     )
     logger.info(message)
-    await notifier.send_message(message, disable_notification=True)
+    await notifier.broadcast_message(message, disable_notification=True)
     try:
         result = await agent.fetch_and_book_session(
             preference=pref,
@@ -49,15 +49,15 @@ async def run_booking_task(notifier, user_id: None | int = None):
         error_msg = f"❌ Failed to book court for {date_str} at {slots.parse_time(pref.start_time)}: {str(e)}"
         logger.error(error_msg)
         logger.exception(e)
-        await notifier.send_message(error_msg)
-        await notifier.send_message("You can retry via /retry command")
+        await notifier.broadcast_message(error_msg)
+        await notifier.broadcast_message("You can retry via /retry command")
         return
     if not result.success:
         error_msg = f"❌ Failed to book court for {date_str} at {slots.parse_time(pref.start_time)}: {str(result.error)}"
         logger.error(error_msg)
-        await notifier.send_message(error_msg)
-        await notifier.send_message("You can retry via /retry command")
+        await notifier.broadcast_message(error_msg)
+        await notifier.broadcast_message("You can retry via /retry command")
         return
-    await notifier.send_message(
+    await notifier.broadcast_message(
         f"✅ Successfully booked court for {date_str} at {slots.parse_time(result.slot.start_time)}"
     )
