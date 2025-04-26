@@ -10,6 +10,13 @@ def html_content():
         return f.read()
 
 
+@pytest.fixture
+def paid_slots_html():
+    """Fixture that provides the paid slots view HTML content"""
+    with open("examples/paid_slots_view.html", "r") as f:
+        return f.read()
+
+
 # Tests for parse_slots function
 def test_parse_slots_empty():
     """Test parsing empty HTML"""
@@ -21,10 +28,9 @@ def test_parse_slots_no_available():
     """Test parsing HTML with no available slots"""
     # Create HTML with only unavailable slots
     html = """
-    <div class="resource">
+    <div class="resource" data-resource-name="Court 1">
         <div class="resource-session">
             <div class="unavailable"></div>
-            <span class="visuallyhidden">on Court 1</span>
         </div>
     </div>
     """
@@ -35,7 +41,7 @@ def test_parse_slots_no_available():
 def test_parse_slots_missing_court():
     """Test parsing slots with missing court information"""
     html = """
-    <div class="resource">
+    <div class="resource" data-resource-name="Court 1">
         <div class="resource-session" data-start-time="480" data-slot-key="key1">
             <span>Some content</span>
         </div>
@@ -43,6 +49,59 @@ def test_parse_slots_missing_court():
     """
     slots = parse_slots(html)
     assert len(slots) == 0
+
+
+def test_parse_slots_with_data_attributes():
+    """Test parsing slots with court info in data attributes"""
+    html = """
+    <div class="resource" data-resource-name="Court 3">
+        <div class="resource-interval" data-system-start-time="480">
+            <span class="available-booking-slot"></span>
+            <a class="book-interval" data-test-id="booking-123|2025-04-12|480"></a>
+        </div>
+    </div>
+    <div class="resource" data-resource-name="Court 4">
+        <div class="resource-interval" data-system-start-time="540">
+            <span class="available-booking-slot"></span>
+            <a class="book-interval" data-test-id="booking-456|2025-04-12|540"></a>
+        </div>
+    </div>
+    """
+    slots = parse_slots(html)
+    assert len(slots) == 2
+    assert slots[0].court == 3
+    assert slots[1].court == 4
+
+
+def test_parse_paid_slots_view(paid_slots_html):
+    """Test parsing slots from paid slots view HTML"""
+    slots = parse_slots(paid_slots_html)
+    assert len(slots) == 19, f"Expected 19 slots but got {len(slots)}"
+
+    # Verify first three slots from Court 1
+    expected_first_slots = [
+        Slot(
+            slot_key="booking-ea5042dd-ba18-4c7d-9d09-9173896e035d|2025-04-27|420",
+            court=1,
+            start_time=420,  # 07:00
+        ),
+        Slot(
+            slot_key="booking-ea5042dd-ba18-4c7d-9d09-9173896e035d|2025-04-27|480",
+            court=1,
+            start_time=480,  # 08:00
+        ),
+        Slot(
+            slot_key="booking-ea5042dd-ba18-4c7d-9d09-9173896e035d|2025-04-27|1080",
+            court=1,
+            start_time=1080,  # 18:00
+        ),
+    ]
+
+    # Check that first three slots match expected
+    for i, expected_slot in enumerate(expected_first_slots):
+        assert (
+            slots[i] == expected_slot
+        ), f"Slot {i} does not match expected: {slots[i]} != {expected_slot}"
 
 
 def test_parse_slots_valid(html_content):
@@ -175,6 +234,44 @@ def test_parse_slots_valid(html_content):
     ]
 
     assert slots == expected_slots
+
+
+def test_parse_slots_invalid_resource_name():
+    """Test parsing slots with invalid data-resource-name"""
+    # Test missing data-resource-name
+    html1 = """
+    <div class="resource">
+        <div class="resource-session">
+            <div class="available"></div>
+        </div>
+    </div>
+    """
+    with pytest.raises(ValueError, match="Invalid or missing data-resource-name"):
+        parse_slots(html1)
+
+    # Test invalid data-resource-name format
+    html2 = """
+    <div class="resource" data-resource-name="Invalid Court">
+        <div class="resource-session">
+            <div class="available"></div>
+        </div>
+    </div>
+    """
+    with pytest.raises(
+        ValueError, match="Could not parse court number from data-resource-name"
+    ):
+        parse_slots(html2)
+
+    # Test valid data-resource-name
+    html3 = """
+    <div class="resource" data-resource-name="Court 1">
+        <div class="resource-session">
+            <div class="available"></div>
+        </div>
+    </div>
+    """
+    slots = parse_slots(html3)
+    assert len(slots) == 0  # No available slots in this HTML
 
 
 # Tests for pick_slot function

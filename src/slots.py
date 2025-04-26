@@ -125,21 +125,24 @@ def parse_slots(html_content: str) -> list[Slot]:
     for resource in soup.find_all("div", class_="resource"):
         if not tag_checker(resource):
             continue
+
+        # Get court number from data-resource-name
+        resource_name = resource.get("data-resource-name", "")
+        if not isinstance(resource_name, str) or "Court" not in resource_name:
+            raise ValueError(f"Invalid or missing data-resource-name: {resource_name}")
+
+        try:
+            court_num = int(resource_name.split()[-1])
+        except (ValueError, IndexError) as e:
+            raise ValueError(
+                f"Could not parse court number from data-resource-name: {resource_name}"
+            ) from e
+
         for session in resource.find_all("div", class_="resource-interval"):
             if not tag_checker(session):
                 continue
             # Skip if session is unavailable
             if not session.find("span", class_="available-booking-slot"):
-                continue
-
-            # Get court number from the visuallyhidden span
-            court_span = session.find("span", class_="visuallyhidden")
-            if not tag_checker(court_span):
-                continue
-            court_text = court_span.text.strip().split()[-1]
-            try:
-                court_num = int(court_text)
-            except (ValueError, IndexError):
                 continue
 
             start_time_str = session.get("data-system-start-time")
