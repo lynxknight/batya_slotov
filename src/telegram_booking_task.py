@@ -53,7 +53,12 @@ async def run_booking_task(notifier, user_id: None | int = None):
         await notifier.broadcast_message("You can retry via /retry command")
         return
     if not result.success:
-        error_msg = f"❌ Failed to book court for {date_str} at {slots.parse_time(pref.start_time)}: {str(result.error)}"
+        result_details = []
+        if result.reason:
+            result_details.append(result.reason)
+        if result.error:
+            result_details.append(str(result.error))
+        error_msg = f"❌ Failed to book court for {date_str} at {slots.parse_time(pref.start_time)}: {' - '.join(result_details) if result_details else 'empty result'}"
         logger.error(error_msg)
         await notifier.broadcast_message(error_msg)
         await notifier.broadcast_message("You can retry via /retry command")
