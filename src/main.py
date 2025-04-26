@@ -46,7 +46,7 @@ def parse_args():
     return args
 
 
-def load_preferences(config_path: str) -> list[dict]:
+def load_preferences(config_path: str) -> dict[str, slots.SlotPreference]:
     logger.info(f"Loading preferences from {config_path}")
     with open(config_path) as f:
         config = json.load(f)

@@ -26,6 +26,12 @@ def ensure_access(func):
 
     @functools.wraps(func)
     async def wrapper(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not update.message:
+            logger.error("No message found in update")
+            return
+        if not update.effective_user:
+            logger.error("No effective user found in update")
+            return
         user_id = update.effective_user.id
         if user_id not in AUTHORIZED_USERS:
             logger.warning(f"Unauthorized access attempt from user {user_id=}")
@@ -74,6 +80,9 @@ class TelegramNotifier:
     @ensure_access
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle the /start command"""
+        if not update.effective_user or not update.message:
+            logger.error("No effective user or message found in update")
+            return
         logger.info(f"Received /start command from user {update.effective_user.id}")
         user_id = update.effective_user.id
 
@@ -94,6 +103,9 @@ class TelegramNotifier:
     @ensure_access
     async def stop_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle the /stop command"""
+        if not update.effective_user or not update.message:
+            logger.error("No effective user or message found in update")
+            return
         user_id = update.effective_user.id
         logger.info(f"Received /stop command from user {user_id}")
 
@@ -111,6 +123,9 @@ class TelegramNotifier:
     @ensure_access
     async def retry_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle the /retry command"""
+        if not update.effective_user or not update.message:
+            logger.error("No effective user or message found in update")
+            return
         user_id = update.effective_user.id
         logger.info(f"Received /retry command from user {user_id}")
 
@@ -127,6 +142,9 @@ class TelegramNotifier:
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ):
         """Handle the /view_schedule command"""
+        if not update.effective_user or not update.message:
+            logger.error("No effective user or message found in update")
+            return
         user_id = update.effective_user.id
         logger.info(f"Received /view_schedule command from user {user_id}")
 
@@ -159,6 +177,9 @@ class TelegramNotifier:
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ):
         """Handle the /view_bookings command"""
+        if not update.effective_user or not update.message:
+            logger.error("No effective user or message found in update")
+            return
         user_id = update.effective_user.id
         logger.info(f"Received /view_bookings command from user {user_id}")
 
@@ -175,6 +196,9 @@ class TelegramNotifier:
             # Format message
             message = "Current Bookings:\n\n"
             for slot in booked_slots:
+                if not slot.date:
+                    logger.error(f"Slot {slot} has no date")
+                    continue
                 date_str = slot.date.strftime("%A, %d %B %Y")
                 time_str = slots.parse_time(slot.start_time)
                 message += f"• {date_str} at {time_str} on Court {slot.court}\n"
@@ -190,6 +214,9 @@ class TelegramNotifier:
     @ensure_access
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle the /help command"""
+        if not update.effective_user or not update.message:
+            logger.error("No effective user or message found in update")
+            return
         help_text = """Available commands:
 
 /start - Subscribe to receive booking notifications and updates
@@ -206,6 +233,9 @@ class TelegramNotifier:
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle any message"""
+        if not update.effective_user or not update.message:
+            logger.error("No effective user or message found in update")
+            return
         logger.info(
             f"Received message from user {update.effective_user.id}: {update.message.text}"
         )

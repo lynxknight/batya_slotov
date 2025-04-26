@@ -1,12 +1,47 @@
 import dataclasses
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag, NavigableString
 from datetime import datetime
 import logging
+from collections import Counter
 
 logger = logging.getLogger(__name__)
 
 
-def parse_time(minutes):
+class TagChecker:
+    def __init__(self):
+        self.stats = Counter()
+
+    def check(self, element: Tag | NavigableString | None) -> bool:
+        """Check if an element is not None and is a Tag"""
+        if element is None:
+            self.stats["none"] += 1
+            return False
+        if not isinstance(element, Tag):
+            self.stats["not_tag"] += 1
+            return False
+        self.stats["valid"] += 1
+        return True
+
+    def __call__(self, element: Tag | NavigableString | None) -> bool:
+        return self.check(element)
+
+    def report(self) -> str:
+        """Report statistics about tag validation"""
+        total = sum(self.stats.values())
+        if total == 0:
+            return "No tags were checked"
+        if self.stats["valid"] == total:
+            return "Tag validation stats: All tags were valid"
+        return (
+            f"Tag validation stats:\n"
+            f"  Total tags checked: {total}\n"
+            f"  Valid tags: {self.stats['valid']} ({self.stats['valid']/total*100:.1f}%)\n"
+            f"  None values: {self.stats['none']} ({self.stats['none']/total*100:.1f}%)\n"
+            f"  Not Tag objects: {self.stats['not_tag']} ({self.stats['not_tag']/total*100:.1f}%)"
+        )
+
+
+def parse_time(minutes: int) -> str:
     """Convert minutes since midnight to HH:MM format"""
     hours = minutes // 60
     minutes = minutes % 60
@@ -21,12 +56,14 @@ def human_readable_time_to_minutes(time: str) -> int:
 
 @dataclasses.dataclass
 class SlotPreference:
-    weekday_lowercase: "str"
+    weekday_lowercase: str
     start_time: int
     preferred_courts: list[int]
 
     @classmethod
-    def from_preferences_json(cls, preferences_json: dict) -> "SlotPreference":
+    def from_preferences_json(
+        cls, preferences_json: dict
+    ) -> dict[str, "SlotPreference"]:
         """
         example preferences_json:
         {
@@ -44,7 +81,7 @@ class SlotPreference:
             ]
         }
         """
-        result = {}
+        result: dict[str, SlotPreference] = {}
         preferences = preferences_json["preferences"]
         for pref in preferences:
             weekdays = pref["weekdays"]
@@ -58,7 +95,7 @@ class SlotPreference:
                 )
         return result
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"SlotPreference(weekday={self.weekday_lowercase}, start_time={parse_time(self.start_time)}, preferred_courts={self.preferred_courts})"
 
 
@@ -69,40 +106,66 @@ class Slot:
     start_time: int  # minutes since midnight
     date: datetime | None = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"Slot<slot_key={self.slot_key}, court={self.court}, "
             f"date={self.date.strftime('%Y-%m-%d') if self.date else 'None'}, "
             f"start_time={parse_time(self.start_time)}>"
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
 
-def parse_slots(html_content) -> list[Slot]:
+def parse_slots(html_content: str) -> list[Slot]:
     soup = BeautifulSoup(html_content, "html.parser")
-    available_slots = []
+    available_slots: list[Slot] = []
+    tag_checker = TagChecker()
+
     for resource in soup.find_all("div", class_="resource"):
+        if not tag_checker(resource):
+            continue
         for session in resource.find_all("div", class_="resource-interval"):
+            if not tag_checker(session):
+                continue
             # Skip if session is unavailable
             if not session.find("span", class_="available-booking-slot"):
                 continue
 
             # Get court number from the visuallyhidden span
             court_span = session.find("span", class_="visuallyhidden")
-            if not court_span:
+            if not tag_checker(court_span):
                 continue
-            court_num = int(court_span.text.strip().split()[-1])
+            court_text = court_span.text.strip().split()[-1]
+            try:
+                court_num = int(court_text)
+            except (ValueError, IndexError):
+                continue
 
-            start_time = int(session.get("data-system-start-time"))
-            slot_key = session.find("a", class_="book-interval").get("data-test-id")
+            start_time_str = session.get("data-system-start-time")
+            if not isinstance(start_time_str, str):
+                continue
+            try:
+                start_time = int(start_time_str)
+            except ValueError:
+                continue
+
+            book_interval = session.find("a", class_="book-interval")
+            if not tag_checker(book_interval):
+                continue
+            slot_key = book_interval.get("data-test-id")
+            if not isinstance(slot_key, str):
+                continue
             available_slots.append(Slot(slot_key, court_num, start_time, date=None))
+
+    logger.info(tag_checker.report())
     return available_slots
 
 
 def pick_slot(
-    available_slots: list[Slot], target_time, preferred_courts: list[int] | None = None
+    available_slots: list[Slot],
+    target_time: int,
+    preferred_courts: list[int] | None = None,
 ) -> Slot | None:
     if not preferred_courts:
         preferred_courts = []
@@ -123,7 +186,10 @@ def pick_slot(
 
 
 def find_slot(
-    html_content, target_time: int, target_date: datetime, preferred_courts=None
+    html_content: str,
+    target_time: int,
+    target_date: datetime,
+    preferred_courts: list[int] | None = None,
 ) -> Slot | None:
     """
     Find available slot based on preferences
@@ -145,28 +211,32 @@ def find_slot(
     return picked_slot
 
 
-def parse_slots_from_bookings_list(html_content) -> list[Slot]:
+def parse_slots_from_bookings_list(html_content: str) -> list[Slot]:
     """
     Parse booked slots from the bookings list HTML page.
     Returns a list of Slot objects representing booked court times.
     """
     soup = BeautifulSoup(html_content, "html.parser")
-    booked_slots = []
+    booked_slots: list[Slot] = []
+    tag_checker = TagChecker()
 
     # Find the bookings table body
     booking_tbody = soup.find("tbody", id="booking-tbody")
-    if not booking_tbody:
+    if not tag_checker(booking_tbody):
         return []
 
-    for row in booking_tbody.find_all("tr"):
+    rows = booking_tbody.find_all("tr") if isinstance(booking_tbody, Tag) else []
+    for row in rows:
+        if not tag_checker(row):
+            continue
         # Get date from the first column
         date_cell = row.find("td", class_="booking-summary")
-        if not date_cell:
+        if not tag_checker(date_cell):
             continue
 
         # Parse date from the strong tag
         date_strong = date_cell.find("strong")
-        if not date_strong:
+        if not tag_checker(date_strong):
             continue
 
         try:
@@ -176,20 +246,20 @@ def parse_slots_from_bookings_list(html_content) -> list[Slot]:
 
         # Get time from the second column
         time_cell = row.find("td", class_="time")
-        if not time_cell:
+        if not tag_checker(time_cell):
             continue
 
         time_span = time_cell.find("span", class_="booking-time")
-        if not time_span:
+        if not tag_checker(time_span):
             continue
 
         # Get court from the third column
         resource_cell = row.find("td", class_="resource")
-        if not resource_cell:
+        if not tag_checker(resource_cell):
             continue
 
         resource_span = resource_cell.find("span", class_="booking-resource")
-        if not resource_span:
+        if not tag_checker(resource_span):
             continue
 
         # Parse court number
@@ -210,10 +280,14 @@ def parse_slots_from_bookings_list(html_content) -> list[Slot]:
 
         # Use booking confirmation URL as slot key
         booking_link = date_cell.find("a")
-        if not booking_link:
+        if not tag_checker(booking_link):
             continue
-        slot_key = booking_link.get("href", "").split("/")[-1]
+        href = booking_link.get("href")
+        if not isinstance(href, str):
+            continue
+        slot_key = href.split("/")[-1]
 
         booked_slots.append(Slot(slot_key, court_num, minutes_since_midnight, date))
 
+    logger.info(tag_checker.report())
     return booked_slots

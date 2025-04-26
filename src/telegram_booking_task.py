@@ -7,7 +7,7 @@ import slots
 logger = logging.getLogger(__name__)
 
 
-async def run_booking_task(notifier, user_id: None | int = None):
+async def run_booking_task(notifier, user_id: int | None = None):
     """Run the booking task. This function can be called directly for retries."""
     # Calculate target date (1 week ahead)
     target_date = datetime.now() + timedelta(days=7)
@@ -17,8 +17,10 @@ async def run_booking_task(notifier, user_id: None | int = None):
     logger.info(f"Starting booking process for {date_str} ({weekday=})")
 
     # Check if there are preferences for this weekday
-    preferences = slots.SlotPreference.from_preferences_json(
-        json.load(open("booking_preferences.json"))
+    preferences: dict[str, slots.SlotPreference] = (
+        slots.SlotPreference.from_preferences_json(
+            json.load(open("booking_preferences.json"))
+        )
     )
     pref = preferences.get(weekday)
     if pref is None:
@@ -62,6 +64,11 @@ async def run_booking_task(notifier, user_id: None | int = None):
         logger.error(error_msg)
         await notifier.broadcast_message(error_msg)
         await notifier.broadcast_message("You can retry via /retry command")
+        return
+    if not result.slot:
+        error_msg = f"❌ Booking succeeded but no slot information available for {date_str}. This is unexpected, please take a look."
+        logger.error(error_msg)
+        await notifier.broadcast_message(error_msg)
         return
     await notifier.broadcast_message(
         f"✅ Successfully booked court for {date_str} at {slots.parse_time(result.slot.start_time)}"
