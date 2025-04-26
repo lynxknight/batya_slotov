@@ -46,6 +46,7 @@ ENV PYTHONPATH=/app
 
 # Copy application code (this should be the last step to leverage Docker cache)
 COPY src/ /app/src/
+COPY examples/ /app/examples/
 COPY booking_preferences.json /app
 COPY subscribed_users.json /app
 

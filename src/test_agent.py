@@ -8,11 +8,20 @@ from telegram import Bot
 
 from agent import dump_page_debug_info_on_exception
 from telegram_bot import TelegramNotifier
+import env
+
+
+@pytest.fixture
+def setup_test_env(monkeypatch):
+    """Set up test environment variables"""
+    monkeypatch.setenv("TENNIS_USERNAME", "test_user")
+    monkeypatch.setenv("TENNIS_PASSWORD", "test_pass")
+    monkeypatch.setenv("TENNIS_BOT_TOKEN", "test_token")
+    env.setup_env()
 
 
 @pytest.mark.asyncio
-async def test_dump_page_debug_info_on_exception_sends_debug_images():
-
+async def test_dump_page_debug_info_on_exception_sends_debug_images(setup_test_env):
     # Create a real temporary directory
     with tempfile.TemporaryDirectory() as tmp_dir:
         # Create a real browser context with a page
