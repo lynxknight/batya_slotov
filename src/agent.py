@@ -219,13 +219,15 @@ async def fetch_and_book_session(
     target_date: datetime.datetime,
     playwright_params: PlaywrightParams,
     dry_run: bool = False,
-) -> slots.Slot | None:
+) -> BookingResult:
     """
     Fetch available sessions and book the earliest one
         date: YYYY-MM-DD format
         show: Whether to show the browser window during automation
         slow_mo: Number of milliseconds to wait between actions (for visualization)
         no_booking: If True, only check availability without making a booking
+    Returns:
+        BookingResult with success status, slot info if available, and error/reason if unsuccessful
     """
 
     username, password = load_credentials()
@@ -255,7 +257,12 @@ async def fetch_and_book_session(
                 logger.info(
                     f"Already have a booking for {target_date} at {parse_time(target_time)}"
                 )
-                return
+                return BookingResult(
+                    success=False,
+                    slot=None,
+                    error=None,
+                    reason=f"Already have a booking for {target_date.strftime('%Y-%m-%d')} at {parse_time(target_time)}",
+                )
 
             logger.info("Slot booking process start")
             booking_page = await setup_booking_page(context, date_str)

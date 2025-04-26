@@ -71,8 +71,8 @@ async def test_run_booking_task_failure(
         # Mock failed booking result
         mock_result = MagicMock()
         mock_result.success = False
-        mock_result.reason = "Court already booked"
-        mock_result.error = "Slot not available"
+        mock_result.reason = "Found no slot at 2024-01-09 for preferred time 16:00"
+        mock_result.error = None
 
         # Mock the agent's fetch_and_book_session
         with patch(
@@ -85,7 +85,7 @@ async def test_run_booking_task_failure(
 
             # Verify the error message was sent
             mock_notifier.broadcast_message.assert_any_call(
-                "❌ Failed to book court for 2024-01-09 at 16:00: Court already booked - Slot not available"
+                "❌ Failed to book court for 2024-01-09 at 16:00: Found no slot at 2024-01-09 for preferred time 16:00"
             )
             # Verify the retry message was sent
             mock_notifier.broadcast_message.assert_any_call(
