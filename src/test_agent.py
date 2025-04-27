@@ -17,6 +17,7 @@ def setup_test_env(monkeypatch):
     monkeypatch.setenv("TENNIS_USERNAME", "test_user")
     monkeypatch.setenv("TENNIS_PASSWORD", "test_pass")
     monkeypatch.setenv("TENNIS_BOT_TOKEN", "test_token")
+    monkeypatch.setenv("TENNIS_CARD", "1@2@3")
     env.setup_env()
 
 
