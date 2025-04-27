@@ -6,7 +6,9 @@ import traceback
 import playwright.async_api
 import os
 
+import env
 import slots
+import payment_form
 
 logger = logging.getLogger(__name__)
 
@@ -81,15 +83,64 @@ async def login(page, username, password):
     # )
 
 
-async def book_slot(page):
-    logger.info("Continue with booking")
-    await page.wait_for_selector('button:has-text("Continue booking")', timeout=2000)
-    await page.get_by_role("button", name="Continue booking").click()
-    logger.info("Wait for confirmation and verify")
+async def booking_confirmation(page):
     await page.wait_for_selector(
-        'h1:has-text("Your booking has been confirmed")', timeout=5000
+        'h1:has-text("Your booking has been confirmed")', timeout=2000
     )
     logger.info("Successfully booked session")
+
+
+# async def book_slot(page):
+#     logger.info("Continue with booking")
+#     await page.wait_for_selector('button:has-text("Continue booking")', timeout=2000)
+#     await page.get_by_role("button", name="Continue booking").click()
+#     logger.info("Wait for confirmation and verify")
+#     try:
+#         return await booking_confirmation(page)
+#     except playwright.async_api.TimeoutError:
+#         logger.info(
+#             'Confirmation message not found, checking if "paynow" flow is needed'
+#         )
+#         pass
+#     return book_slot_via_paynow(page)
+
+
+async def book_slot_via_paynow(page, dry_run: bool = False):
+    logger.info("Waiting for continue booking button")
+    await page.wait_for_selector('button:has-text("Continue booking")', timeout=2000)
+    logger.info("Clicking continue booking button")
+    await page.get_by_role("button", name="Continue booking").click()
+    logger.info("Waiting for paynow button")
+    await page.wait_for_selector("button#paynow", timeout=2000)
+    logger.info("Paynow button found")
+    button_text = await page.locator("button#paynow").text_content()
+    if "pay" in button_text.lower():
+        logger.info("Actually need to pay")
+        return book_slot_with_actual_payment(page, dry_run=dry_run)
+    logger.info("No need to pay")
+    return book_slot_with_free_payment(page, dry_run=dry_run)
+
+
+async def book_slot_with_actual_payment(page, dry_run: bool = False):
+    # assumes that button#paynow exists
+    await page.locator("button#paynow").click()
+    await payment_form.process_payment(
+        page, payment_form.Card.from_string(env.get_tennis_card()), dry_run=dry_run
+    )
+    if dry_run:
+        logger.info("Dry run, skipping confirmation")
+        return
+    # Wait for confirmation message
+    return await booking_confirmation(page)
+
+
+async def book_slot_with_free_payment(page, dry_run: bool = False):
+    if dry_run:
+        logger.info("Dry run, skipping booking")
+        return
+    await page.locator("button#paynow").click()
+    # Wait for confirmation message
+    return await booking_confirmation(page)
 
 
 async def accept_cookies(page):
@@ -289,11 +340,6 @@ async def fetch_and_book_session(
             logger.info(f"Found available slot at {parse_time(slot.start_time)}")
             logger.info("Click on the earliest available session")
             await booking_page.locator(f'[data-test-id="{slot.slot_key}"]').click()
-            if dry_run:
-                logger.info("Dry run, skipping booking")
-                return BookingResult(
-                    success=False, slot=slot, error=None, reason="Dry run"
-                )
-            await book_slot(booking_page)
+            await book_slot_via_paynow(booking_page, dry_run=dry_run)
             logger.info("Booking process completed")
             return BookingResult(success=True, slot=slot, error=None)

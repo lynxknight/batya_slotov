@@ -14,83 +14,89 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Book earliest available tennis court slot"
+    parser = argparse.ArgumentParser(description="Tennis court booking automation")
+    subparsers = parser.add_subparsers(
+        dest="command", help="Command to execute", required=True
     )
-    parser.add_argument(
+
+    # Common arguments for both commands
+    common_args = argparse.ArgumentParser(add_help=False)
+    common_args.add_argument(
         "--show", action="store_true", help="Show browser window during automation"
     )
-    parser.add_argument(
+    common_args.add_argument(
         "--slow",
         type=int,
         default=0,
         help="Add delay between actions (in milliseconds)",
     )
-    parser.add_argument(
-        "--preferences-path",
-        type=str,
-        default="booking_preferences.json",
-        help="File containing booking preferences",
+
+    # Book command
+    book_parser = subparsers.add_parser(
+        "book", parents=[common_args], help="Book a tennis court"
     )
-    parser.add_argument(
+    book_parser.add_argument(
+        "--slot",
+        type=str,
+        required=True,
+        help="Slot to book in format 'dd/mm/yy hh:mm'",
+    )
+    book_parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Only check availability without making a booking",
     )
-    parser.add_argument(
-        "--target-date",
-        type=lambda d: datetime.datetime.strptime(d, "%Y-%m-%d").strftime("%Y-%m-%d"),
-        help="Date in YYYY-MM-DD format",
+
+    # Fetch bookings command
+    fetch_parser = subparsers.add_parser(
+        "fetch_bookings", parents=[common_args], help="Fetch existing bookings"
     )
-    args = parser.parse_args()
-    return args
+
+    return parser.parse_args()
 
 
-def load_preferences(config_path: str) -> dict[str, slots.SlotPreference]:
-    logger.info(f"Loading preferences from {config_path}")
-    with open(config_path) as f:
-        config = json.load(f)
-    return slots.SlotPreference.from_preferences_json(config)
-
-
-def get_active_preference(
-    preferences: dict[str, slots.SlotPreference], target_date: datetime.datetime
-) -> typing.Optional[slots.SlotPreference]:
-    weekday = target_date.strftime("%A").lower()  # Get day name in lowercase
-    logger.info(f"Getting active preference for {target_date=} {weekday=}")
-    return preferences[weekday]
+def parse_slot_datetime(slot_str: str) -> datetime.datetime:
+    try:
+        return datetime.datetime.strptime(slot_str, "%d/%m/%Y %H:%M")
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(
+            f"Invalid slot format. Expected 'dd/mm/yyyy hh:mm', got '{slot_str}'"
+        ) from e
 
 
 async def main():
     args = parse_args()
-    # preferences = load_preferences(args.preferences_path)
-    target_date = (
-        datetime.datetime.strptime(args.target_date, "%Y-%m-%d")
-        if args.target_date
-        else datetime.datetime.now() + datetime.timedelta(days=7)
-    )
-    # active_preference = get_active_preference(preferences, target_date)
     playwright_params = agent.PlaywrightParams(
         headless=not args.show,
         slow_mo=args.slow,
     )
+
     try:
-        # await agent.fetch_and_book_session(
-        #     target_date=target_date,
-        #     preference=active_preference,
-        #     playwright_params=playwright_params,
-        #     dry_run=args.dry_run,
-        # )
-        await agent.fetch_existing_bookings_standalone(
-            playwright_params=playwright_params,
-        )
+        if args.command == "book":
+            slot_datetime = parse_slot_datetime(args.slot)
+            preference = slots.SlotPreference(
+                weekday_lowercase=slot_datetime.strftime("%A").lower(),
+                start_time=slots.human_readable_time_to_minutes(
+                    slot_datetime.strftime("%H:%M")
+                ),
+                preferred_courts=[],
+            )
+            await agent.fetch_and_book_session(
+                target_date=slot_datetime,
+                preference=preference,
+                playwright_params=playwright_params,
+                dry_run=args.dry_run,
+            )
+        elif args.command == "fetch_bookings":
+            await agent.fetch_existing_bookings_standalone(
+                playwright_params=playwright_params,
+            )
     except Exception as e:
-        logger.error(f"Error during booking process: {e}")
+        logger.error(f"Error during {args.command} process: {e}")
         raise
 
 
 if __name__ == "__main__":
     # Load credentials from files
     env.setup_env()
-
     asyncio.run(main())

@@ -77,7 +77,7 @@ class SlotPreference:
                     "weekdays": ["saturday"],
                     "time": "08:00",
                     "courts": [3, 4]
-                }
+            }
             ]
         }
         """

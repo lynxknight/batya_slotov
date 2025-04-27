@@ -10,8 +10,36 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+class Variable:
+    TENNIS_USERNAME = "TENNIS_USERNAME"
+    TENNIS_PASSWORD = "TENNIS_PASSWORD"
+    TENNIS_BOT_TOKEN = "TENNIS_BOT_TOKEN"
+    TENNIS_CARD = "TENNIS_CARD"
+
+    @staticmethod
+    def get_tennis_username():
+        return os.environ.get(Variable.TENNIS_USERNAME)
+
+    @staticmethod
+    def get_tennis_password():
+        return os.environ.get(Variable.TENNIS_PASSWORD)
+
+    @staticmethod
+    def get_tennis_bot_token():
+        return os.environ.get(Variable.TENNIS_BOT_TOKEN)
+
+    @staticmethod
+    def get_tennis_card():
+        return os.environ.get(Variable.TENNIS_CARD)
+
+
 def setup_env():
-    target_envs = ["TENNIS_USERNAME", "TENNIS_PASSWORD", "TENNIS_BOT_TOKEN"]
+    target_envs = [
+        Variable.TENNIS_USERNAME,
+        Variable.TENNIS_PASSWORD,
+        Variable.TENNIS_BOT_TOKEN,
+        Variable.TENNIS_CARD,
+    ]
     """Load credentials and bot token from files and set them as environment variables"""
     if all(os.environ.get(env) for env in target_envs):
         logger.info("All environment variables are set, skipping setup")
@@ -21,37 +49,26 @@ def setup_env():
         # Get the directory of the current script
         current_dir = Path(__file__).parent.parent
 
-        # Read username
-        username_file = current_dir / ".sensitive" / ".username"
-        if not username_file.exists():
-            raise FileNotFoundError(f"Username file not found at {username_file}")
-        with open(username_file, "r") as f:
-            username = f.readline().strip()
-            if not username:
-                raise ValueError("Username file is empty")
-            os.environ["TENNIS_USERNAME"] = username
+        def set_variable(variable, filepath, error_message):
+            if variable in os.environ:
+                logger.info(f"{variable} already set, skipping")
+                return
+            logger.info(f"Setting {variable} from {filepath}")
+            file_path = current_dir / ".sensitive" / filepath
+            if not file_path.exists():
+                raise FileNotFoundError(f"{error_message} not found at {file_path}")
+            with open(file_path, "r") as f:
+                value = f.readline().strip()
+                if not value:
+                    raise ValueError(f"{error_message} file is empty")
+                os.environ[variable] = value
 
-        # Read password
-        password_file = current_dir / ".sensitive" / ".password"
-        if not password_file.exists():
-            raise FileNotFoundError(f"Password file not found at {password_file}")
-        with open(password_file, "r") as f:
-            password = f.readline().strip()
-            if not password:
-                raise ValueError("Password file is empty")
-            os.environ["TENNIS_PASSWORD"] = password
-
-        # Read Telegram bot token
-        token_file = current_dir / ".sensitive" / ".telegram_bot_token"
-        if not token_file.exists():
-            raise FileNotFoundError(
-                f"Telegram bot token file not found at {token_file}"
-            )
-        with open(token_file, "r") as f:
-            token = f.readline().strip()
-            if not token:
-                raise ValueError("Telegram bot token file is empty")
-            os.environ["TENNIS_BOT_TOKEN"] = token
+        set_variable(Variable.TENNIS_USERNAME, ".username", "Username file")
+        set_variable(Variable.TENNIS_PASSWORD, ".password", "Password file")
+        set_variable(
+            Variable.TENNIS_BOT_TOKEN, ".telegram_bot_token", "Telegram bot token file"
+        )
+        set_variable(Variable.TENNIS_CARD, ".card", "Card file")
 
         logger.info("Successfully loaded credentials and bot token from files")
 
