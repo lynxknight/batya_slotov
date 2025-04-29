@@ -116,7 +116,7 @@ async def book_slot_via_paynow(page, dry_run: bool = False):
     button_text = await page.locator("button#paynow").text_content()
     if "pay" in button_text.lower():
         logger.info("Actually need to pay")
-        return book_slot_with_actual_payment(page, dry_run=dry_run)
+        return await book_slot_with_actual_payment(page, dry_run=dry_run)
     logger.info("No need to pay")
     return book_slot_with_free_payment(page, dry_run=dry_run)
 
@@ -125,7 +125,9 @@ async def book_slot_with_actual_payment(page, dry_run: bool = False):
     # assumes that button#paynow exists
     await page.locator("button#paynow").click()
     await payment_form.process_payment(
-        page, payment_form.Card.from_string(env.get_tennis_card()), dry_run=dry_run
+        page,
+        payment_form.Card.from_string(env.Variable.get_tennis_card()),
+        dry_run=dry_run,
     )
     if dry_run:
         logger.info("Dry run, skipping confirmation")

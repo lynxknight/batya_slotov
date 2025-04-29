@@ -22,12 +22,8 @@ async def fill_stripe_element(page, element_id, value):
     """
     try:
         # Wait for the element to be present
-        element = await page.wait_for_selector(f"#{element_id}")
-        iframe = await element.query_selector("iframe")
-        if not iframe:
-            raise Exception(f"Could not find iframe in element {element_id}")
-        frame = await iframe.content_frame()
-        await frame.fill("input", value)
+        logger.info(f"Fill stripe element {element_id}")
+        await page.type(f"#{element_id} input", value, delay=100)
     except Exception:
         logger.exception(f"Error filling {element_id}")
         raise
