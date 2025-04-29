@@ -79,7 +79,7 @@ async def main():
                 start_time=slots.human_readable_time_to_minutes(
                     slot_datetime.strftime("%H:%M")
                 ),
-                preferred_courts=[],
+                preferred_courts=[3, 4],
             )
             await agent.fetch_and_book_session(
                 target_date=slot_datetime,

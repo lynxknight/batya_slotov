@@ -43,6 +43,10 @@ def setup_env():
     """Load credentials and bot token from files and set them as environment variables"""
     if all(os.environ.get(env) for env in target_envs):
         logger.info("All environment variables are set, skipping setup")
+        logger.info(
+            f"First 4 chars of target envs: {Variable.get_tennis_username()[:4]}, {Variable.get_tennis_password()[:4]}, {Variable.get_tennis_bot_token()[:4]}, {Variable.get_tennis_card()[:4]}"
+        )
+        logger.info(f"Names of target envs: {target_envs}")
         return
     logger.info("Not all environment variables are set, assume loading from files")
     try:

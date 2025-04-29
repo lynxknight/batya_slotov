@@ -85,7 +85,7 @@ async def login(page, username, password):
 
 async def booking_confirmation(page):
     await page.wait_for_selector(
-        'h1:has-text("Your booking has been confirmed")', timeout=2000
+        'h1:has-text("Your booking has been confirmed")', timeout=10000
     )
     logger.info("Successfully booked session")
 

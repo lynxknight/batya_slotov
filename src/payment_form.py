@@ -13,6 +13,7 @@ class Card:
     @classmethod
     def from_string(cls, s: str) -> "Card":
         parts = s.split("@")
+        logger.info(f"Creating card with nuber: {parts[0][:4]}")
         return cls(number=parts[0], expiry=parts[1], cvc=parts[2])
 
 
@@ -23,7 +24,8 @@ async def fill_stripe_element(page, element_id, value):
     try:
         # Wait for the element to be present
         logger.info(f"Fill stripe element {element_id}")
-        await page.type(f"#{element_id} input", value, delay=100)
+        await page.wait_for_timeout(100)
+        await page.type(f"#{element_id} input", " " + value, delay=100)
     except Exception:
         logger.exception(f"Error filling {element_id}")
         raise
