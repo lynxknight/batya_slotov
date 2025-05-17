@@ -111,7 +111,18 @@ async def book_slot_via_paynow(page, dry_run: bool = False):
     logger.info("Clicking continue booking button")
     await page.get_by_role("button", name="Continue booking").click()
     logger.info("Waiting for paynow button")
-    await page.wait_for_selector("button#paynow", timeout=2000)
+    try:
+        await page.wait_for_selector("button#paynow", timeout=2000)
+    except playwright.async_api.TimeoutError as e:
+        logger.info("Paynow button not found, maybe free booking?")
+        try:
+            await booking_confirmation(page)
+        except playwright.async_api.TimeoutError:
+            logger.info("No confirmation message found, raise")
+            raise e
+        else:
+            logger.info("Free booking confirmed, return")
+            return
     logger.info("Paynow button found")
     button_text = await page.locator("button#paynow").text_content()
     if "pay" in button_text.lower():
