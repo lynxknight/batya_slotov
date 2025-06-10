@@ -8,3 +8,4 @@ debug/
 .debug.html
 .telegram_bot_token
 tst.py
+*.code-workspace

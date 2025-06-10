@@ -11,6 +11,16 @@ async def run_booking_task(notifier, user_id: int | None = None):
     """Run the booking task. This function can be called directly for retries."""
     # Calculate target date (1 week ahead)
     target_date = datetime.now() + timedelta(days=7)
+
+    # Skip if target date is between June 16-27, 2025
+    skip_start = datetime(2025, 6, 16)
+    skip_end = datetime(2025, 6, 27)
+    if skip_start <= target_date <= skip_end:
+        logger.info(
+            f"Skipping booking for {target_date} as it falls in blackout period"
+        )
+        return
+
     date_str = target_date.strftime("%Y-%m-%d")
     weekday = target_date.strftime("%A").lower()
 
