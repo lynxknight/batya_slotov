@@ -12,10 +12,11 @@ async def run_booking_task(notifier, user_id: int | None = None):
     # Calculate target date (1 week ahead)
     target_date = datetime.now() + timedelta(days=7)
 
-    # Skip if target date is between June 16-27, 2025
-    skip_start = datetime(2025, 6, 16)
-    skip_end = datetime(2025, 6, 27)
-    if skip_start <= target_date <= skip_end:
+    # Skips
+    skip_start = datetime(2025, 7, 12)
+    skip_end = datetime(2025, 8, 4)
+    is_tuesday = target_date.weekday() == 1
+    if skip_start <= target_date <= skip_end and is_tuesday:
         logger.info(
             f"Skipping booking for {target_date} as it falls in blackout period"
         )
