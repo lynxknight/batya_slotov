@@ -67,3 +67,45 @@ async def test_dump_page_debug_info_on_exception_sends_debug_images(setup_test_e
                     assert actual_content == expected_content
 
             await browser.close()
+
+
+from agent import fetch_existing_bookings
+import slots
+
+
+@pytest.mark.asyncio
+async def test_fetch_existing_bookings_old_format():
+    """Test fetch_existing_bookings with the old HTML format"""
+    with open("examples/bookings_list.html", "r") as f:
+        html_content = f.read()
+
+    mock_page = AsyncMock()
+    mock_page.goto.return_value = None
+    mock_page.content.return_value = html_content
+    mock_page.wait_for_selector.return_value = None
+
+    bookings = await fetch_existing_bookings(mock_page)
+
+    assert len(bookings) == 2
+    assert bookings[0].court == 1
+    assert bookings[0].start_time == 420
+    assert bookings[0].date.strftime("%Y-%m-%d") == "2025-04-08"
+
+
+@pytest.mark.asyncio
+async def test_fetch_existing_bookings_new_format():
+    """Test fetch_existing_bookings with the new HTML format"""
+    with open("examples/new_bookings.html", "r") as f:
+        html_content = f.read()
+
+    mock_page = AsyncMock()
+    mock_page.goto.return_value = None
+    mock_page.content.return_value = html_content
+    mock_page.wait_for_selector.return_value = None
+
+    bookings = await fetch_existing_bookings(mock_page)
+
+    assert len(bookings) == 2
+    assert bookings[0].court == 3
+    assert bookings[0].start_time == 960
+    assert bookings[0].date.strftime("%Y-%m-%d %H:%M") == "2025-08-19 16:00"

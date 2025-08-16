@@ -214,9 +214,9 @@ def find_slot(
     return picked_slot
 
 
-def parse_slots_from_bookings_list(html_content: str) -> list[Slot]:
+def parse_slots_from_old_bookings_list(html_content: str) -> list[Slot]:
     """
-    Parse booked slots from the bookings list HTML page.
+    Parse booked slots from the old bookings list HTML page.
     Returns a list of Slot objects representing booked court times.
     """
     soup = BeautifulSoup(html_content, "html.parser")
@@ -294,3 +294,84 @@ def parse_slots_from_bookings_list(html_content: str) -> list[Slot]:
 
     logger.info(tag_checker.report())
     return booked_slots
+
+
+def parse_slots_from_new_bookings_list(html_content: str) -> list[Slot]:
+    """
+    Parse booked slots from the new bookings list HTML page.
+    Returns a list of Slot objects representing booked court times.
+    """
+    soup = BeautifulSoup(html_content, "html.parser")
+    booked_slots: list[Slot] = []
+    tag_checker = TagChecker()
+
+    for panel in soup.find_all("div", class_="block-panel"):
+        if not tag_checker(panel):
+            continue
+
+        # Get date and time from h2
+        title_div = panel.find("div", class_="block-panel-title")
+        if not tag_checker(title_div):
+            continue
+        h2 = title_div.find("h2")
+        if not tag_checker(h2):
+            continue
+
+        try:
+            # Example: "Tue, 19 Aug 2025, 16:00 - 17:00"
+            date_time_str = h2.text.strip()
+            date_part, time_part = date_time_str.split(",")[1:]
+            time_part = time_part.split("-")[0].strip()
+            # combine date and time and parse
+            date_str = date_part.strip() + " " + time_part
+            dt = datetime.strptime(date_str, "%d %b %Y %H:%M")
+            minutes_since_midnight = dt.hour * 60 + dt.minute
+
+        except (ValueError, IndexError):
+            continue
+
+        # Get court number
+        resource_row = panel.find(
+            "span",
+            class_="block-panel-row-label",
+            string=lambda t: "Resource(s)" in t if t else False,
+        )
+        if not resource_row:
+            continue
+
+        resource_value = resource_row.find_next_sibling(
+            "span", class_="block-panel-row-value"
+        )
+        if not tag_checker(resource_value):
+            continue
+
+        court_text = resource_value.text.strip()
+        try:
+            court_num = int(court_text.split()[-1])
+        except (ValueError, IndexError):
+            continue
+
+        # Get slot key from booking link
+        details_link = panel.find("a", class_="cs-btn")
+        if not tag_checker(details_link):
+            continue
+        href = details_link.get("href")
+        if not isinstance(href, str):
+            continue
+        slot_key = href.split("/")[-1]
+
+        booked_slots.append(Slot(slot_key, court_num, minutes_since_midnight, dt))
+
+    logger.info(tag_checker.report())
+    return booked_slots
+
+
+def parse_slots_from_bookings_list(html_content: str) -> list[Slot]:
+    """
+    Parse booked slots from the bookings list HTML page.
+    Returns a list of Slot objects representing booked court times.
+    """
+    slots = parse_slots_from_new_bookings_list(html_content)
+    if slots:
+        return slots
+    return parse_slots_from_old_bookings_list(html_content)

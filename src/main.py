@@ -88,9 +88,12 @@ async def main():
                 dry_run=args.dry_run,
             )
         elif args.command == "fetch_bookings":
-            await agent.fetch_existing_bookings_standalone(
+            bookings = await agent.fetch_existing_bookings_standalone(
                 playwright_params=playwright_params,
             )
+            for b in bookings:
+                print(b)
+
     except Exception as e:
         logger.error(f"Error during {args.command} process: {e}")
         raise

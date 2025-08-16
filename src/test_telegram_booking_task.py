@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta
+import datetime
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 import slots
@@ -35,9 +35,13 @@ async def test_run_booking_task_success(
     mock_notifier, mock_preferences_file, mock_credentials, monkeypatch
 ):
     # Mock the current date to be a Tuesday
-    mock_date = datetime(2024, 1, 2)  # This is a Tuesday
-    with patch("telegram_booking_task.datetime") as mock_datetime:
+    mock_date = datetime.datetime(2024, 1, 2)  # This is a Tuesday
+    original_datetime = datetime.datetime
+    with patch("telegram_booking_task.dt.datetime") as mock_datetime:
         mock_datetime.now.return_value = mock_date
+        mock_datetime.side_effect = lambda *args, **kwargs: original_datetime(
+            *args, **kwargs
+        )
 
         # Mock successful booking result
         mock_result = MagicMock()
@@ -64,9 +68,13 @@ async def test_run_booking_task_failure(
     mock_notifier, mock_preferences_file, mock_credentials, monkeypatch
 ):
     # Mock the current date to be a Tuesday
-    mock_date = datetime(2024, 1, 2)  # This is a Tuesday
-    with patch("telegram_booking_task.datetime") as mock_datetime:
+    mock_date = datetime.datetime(2024, 1, 2)  # This is a Tuesday
+    original_datetime = datetime.datetime
+    with patch("telegram_booking_task.dt.datetime") as mock_datetime:
         mock_datetime.now.return_value = mock_date
+        mock_datetime.side_effect = lambda *args, **kwargs: original_datetime(
+            *args, **kwargs
+        )
 
         # Mock failed booking result
         mock_result = MagicMock()
@@ -103,9 +111,13 @@ async def test_run_booking_task_no_preferences(
     # Mock json.load to return our preferences
     with patch("telegram_booking_task.json.load", return_value=preferences):
         # Mock the current date to be a Tuesday
-        mock_date = datetime(2024, 1, 2)  # This is a Tuesday
-        with patch("telegram_booking_task.datetime") as mock_datetime:
+        mock_date = datetime.datetime(2024, 1, 2)  # This is a Tuesday
+        original_datetime = datetime.datetime
+        with patch("telegram_booking_task.dt.datetime") as mock_datetime:
             mock_datetime.now.return_value = mock_date
+            mock_datetime.side_effect = lambda *args, **kwargs: original_datetime(
+                *args, **kwargs
+            )
 
             # Run the booking task with a user_id
             await run_booking_task(mock_notifier, user_id=123)
@@ -125,9 +137,13 @@ async def test_run_booking_task_exception(
     mock_notifier, mock_preferences_file, mock_credentials, monkeypatch
 ):
     # Mock the current date to be a Tuesday
-    mock_date = datetime(2024, 1, 2)  # This is a Tuesday
-    with patch("telegram_booking_task.datetime") as mock_datetime:
+    mock_date = datetime.datetime(2024, 1, 2)  # This is a Tuesday
+    original_datetime = datetime.datetime
+    with patch("telegram_booking_task.dt.datetime") as mock_datetime:
         mock_datetime.now.return_value = mock_date
+        mock_datetime.side_effect = lambda *args, **kwargs: original_datetime(
+            *args, **kwargs
+        )
 
         # Mock the agent's fetch_and_book_session to raise an exception
         with patch(

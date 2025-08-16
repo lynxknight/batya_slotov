@@ -1,6 +1,12 @@
 import pytest
 import datetime
-from slots import parse_slots, pick_slot, Slot, parse_slots_from_bookings_list
+from slots import (
+    parse_slots,
+    pick_slot,
+    Slot,
+    parse_slots_from_old_bookings_list,
+    parse_slots_from_new_bookings_list,
+)
 
 
 @pytest.fixture
@@ -335,11 +341,16 @@ def test_pick_slot_empty_list():
     assert slot is None
 
 
-def test_parse_slots_from_bookings_list(html_content):
-    """Test parsing booked slots from bookings list HTML"""
+@pytest.fixture
+def bookings_list_html():
+    """Fixture that provides the old bookings list HTML content"""
     with open("examples/bookings_list.html", "r") as f:
-        html_content = f.read()
-    slots = parse_slots_from_bookings_list(html_content)
+        return f.read()
+
+
+def test_parse_slots_from_old_bookings_list(bookings_list_html):
+    """Test parsing booked slots from bookings list HTML"""
+    slots = parse_slots_from_old_bookings_list(bookings_list_html)
     assert slots == [
         Slot(
             slot_key="16bfafe5-3314-46c2-9999-4a83e5508deb",
@@ -352,5 +363,31 @@ def test_parse_slots_from_bookings_list(html_content):
             court=2,
             start_time=480,
             date=datetime.datetime(2025, 4, 17),
+        ),
+    ]
+
+
+@pytest.fixture
+def new_bookings_html():
+    """Fixture that provides the new bookings list HTML content"""
+    with open("examples/new_bookings.html", "r") as f:
+        return f.read()
+
+
+def test_parse_slots_from_new_bookings_list(new_bookings_html):
+    """Test parsing booked slots from the new bookings list HTML format"""
+    slots = parse_slots_from_new_bookings_list(new_bookings_html)
+    assert slots == [
+        Slot(
+            slot_key="3b619e14-899b-402a-a914-f95b6f464961",
+            court=3,
+            start_time=960,  # 16:00
+            date=datetime.datetime(2025, 8, 19, 16, 0),
+        ),
+        Slot(
+            slot_key="52846ae4-f601-437a-b566-1a2d714d6d19",
+            court=3,
+            start_time=480,  # 08:00
+            date=datetime.datetime(2025, 8, 23, 8, 0),
         ),
     ]

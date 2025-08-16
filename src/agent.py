@@ -170,7 +170,8 @@ async def fetch_existing_bookings(page) -> list[slots.Slot]:
     logger.info("Fetching existing bookings")
     await page.goto("https://clubspark.lta.org.uk/PrioryPark2/Booking/Bookings")
     try:
-        await page.wait_for_selector("#booking-tbody", timeout=1000)
+        # #booking-tbody was neded for old layout
+        await page.wait_for_selector("#booking-tbody, .block-panel", timeout=1000)
     except Exception:
         logger.info("Waiting for booking list failed, assuming no existing bookings")
         return []

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+import datetime as dt
 import json
 import agent
 import logging
@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 async def run_booking_task(notifier, user_id: int | None = None):
     """Run the booking task. This function can be called directly for retries."""
     # Calculate target date (1 week ahead)
-    target_date = datetime.now() + timedelta(days=7)
+    target_date = dt.datetime.now() + dt.timedelta(days=7)
 
     # Skips
-    skip_start = datetime(2025, 7, 12)
-    skip_end = datetime(2025, 8, 4)
+    skip_start = dt.datetime(2025, 7, 12)
+    skip_end = dt.datetime(2025, 8, 4)
     is_tuesday = target_date.weekday() == 1
     if skip_start <= target_date <= skip_end and is_tuesday:
         logger.info(
